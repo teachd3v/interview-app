@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useFormStore } from '../../store/formStore'
 import { useCandidateStore } from '../../store/candidateStore'
 import { useFormResultsStore, FormResult } from '../../store/formResultsStore'
+import { useInstrumentStore } from '../../store/instrumentStore'
 
 export default function FormWawancara() {
   const { candidateId } = useParams()
@@ -28,9 +29,14 @@ export default function FormWawancara() {
 
   const addResult = useFormResultsStore((state) => state.addResult)
 
+  const instruments = useInstrumentStore((state) => state.instruments)
+  const getInstrumentsByBagian = useInstrumentStore((state) => state.getInstrumentsByBagian)
+  const loadInstruments = useInstrumentStore((state) => state.loadFromLocalStorage)
+
   useEffect(() => {
     loadCandidates()
-  }, [loadCandidates])
+    loadInstruments()
+  }, [loadCandidates, loadInstruments])
 
   const candidate = candidates.find((c) => c.id === candidateId)
 

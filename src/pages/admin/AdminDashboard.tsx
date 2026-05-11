@@ -58,6 +58,16 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-600">Kelola data pewawancara</p>
           </Link>
 
+          {/* Data Instrumen Card */}
+          <Link
+            to="/admin/instrumen"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">📋</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Data Instrumen</h2>
+            <p className="text-sm text-gray-600">Kelola pertanyaan wawancara</p>
+          </Link>
+
           {/* Jadwal Wawancara Card */}
           <Link
             to="/admin/jadwal"
