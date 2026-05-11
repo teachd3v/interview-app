@@ -2,12 +2,15 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useFormStore } from '../../store/formStore'
 import { useCandidateStore } from '../../store/candidateStore'
+import { useFormResultsStore, FormResult } from '../../store/formResultsStore'
 
 export default function FormWawancara() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'partA' | 'partB' | 'partC'>('partA')
   const [toast, setToast] = useState<{ message: string; type: 'warning' | 'error' } | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [submittedResult, setSubmittedResult] = useState<FormResult | null>(null)
 
   const {
     partA,
@@ -17,10 +20,13 @@ export default function FormWawancara() {
     updatePartB,
     setNotes,
     isPartBComplete,
+    reset: resetForm,
   } = useFormStore()
 
   const candidates = useCandidateStore((state) => state.candidates)
   const loadCandidates = useCandidateStore((state) => state.loadFromLocalStorage)
+
+  const addResult = useFormResultsStore((state) => state.addResult)
 
   useEffect(() => {
     loadCandidates()
@@ -56,8 +62,46 @@ export default function FormWawancara() {
       })
       return
     }
-    alert('Form submitted! Data tersimpan.')
-    navigate('/interviewer')
+
+    // Calculate scores
+    const partAPass = partA.every((item) => item.value === true)
+
+    // Calculate Part B score (0=tidak, 1=ragu, 2=ya)
+    const partBScores = partB.map((item) => {
+      const score = item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0
+      return { ...item, score }
+    })
+    const partBTotal = partBScores.reduce((sum, item) => sum + item.score, 0)
+    const partBPercentage = (partBTotal / 40) * 100
+
+    // Create result object
+    const result: FormResult = {
+      id: `result-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      candidateId: candidateId || '',
+      candidateName: candidate?.fullName || 'Unknown',
+      interviewDate: new Date().toISOString().split('T')[0],
+      submittedAt: new Date().toISOString(),
+      partA: partA.map((item) => ({
+        id: item.id,
+        label: item.label,
+        value: item.value || false,
+      })),
+      partB: partBScores,
+      notes,
+      partAPass,
+      partBTotal,
+      partBPercentage,
+    }
+
+    // Save to store
+    addResult(result)
+    setSubmittedResult(result)
+
+    // Show success modal
+    setShowSuccessModal(true)
+
+    // Reset form
+    resetForm()
   }
 
   const partBByAspect = partB.reduce(
@@ -264,6 +308,54 @@ export default function FormWawancara() {
           </button>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && submittedResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">
+            <div className="text-5xl mb-4">✅</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Wawancara Selesai!</h2>
+            <p className="text-gray-600 mb-6">Data tersimpan di browser</p>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-2">
+              <div>
+                <p className="text-xs text-gray-500">Kandidat</p>
+                <p className="font-semibold text-gray-900">{submittedResult.candidateName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Tanggal</p>
+                <p className="font-semibold text-gray-900">{submittedResult.interviewDate}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-xs text-gray-500">Part A (Wajib)</p>
+                  <p className={`text-lg font-bold ${submittedResult.partAPass ? 'text-green-600' : 'text-red-600'}`}>
+                    {submittedResult.partAPass ? 'LULUS' : 'TIDAK LULUS'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Part B (Skor)</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {submittedResult.partBTotal}/40
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false)
+                  navigate('/interviewer')
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
