@@ -80,6 +80,7 @@ export default function FormWawancara() {
         return
       }
       setActiveTab('partB')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else if (activeTab === 'partB') {
       if (!isPartBComplete()) {
         setToast({
@@ -89,6 +90,7 @@ export default function FormWawancara() {
         return
       }
       setActiveTab('partC')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
