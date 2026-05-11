@@ -1,9 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
+import BulkImportModal from '../../components/BulkImportModal'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const logout = useAuthStore((state) => state.logout)
+  const [showBulkImport, setShowBulkImport] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -16,12 +19,20 @@ export default function AdminDashboard() {
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+            >
+              ⬆️ Bulk Import
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -65,6 +76,11 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <BulkImportModal onClose={() => setShowBulkImport(false)} />
+      )}
     </div>
   )
 }
