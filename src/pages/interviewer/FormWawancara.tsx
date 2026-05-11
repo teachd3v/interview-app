@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useFormStore } from '../../store/formStore'
-import { mockCandidates } from '../../mocks/data'
+import { useCandidateStore } from '../../store/candidateStore'
 
 export default function FormWawancara() {
   const { candidateId } = useParams()
@@ -19,7 +19,14 @@ export default function FormWawancara() {
     isPartBComplete,
   } = useFormStore()
 
-  const candidate = mockCandidates.find((c) => c.id === candidateId)
+  const candidates = useCandidateStore((state) => state.candidates)
+  const loadCandidates = useCandidateStore((state) => state.loadFromLocalStorage)
+
+  useEffect(() => {
+    loadCandidates()
+  }, [loadCandidates])
+
+  const candidate = candidates.find((c) => c.id === candidateId)
 
   useEffect(() => {
     if (!candidate) {
