@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useInterviewerStore, Interviewer } from '../../store/interviewerStore'
-import { parseInterviewerExcelFile } from '../../utils/excelParser'
+import { parseInterviewerExcelFile, downloadInterviewerTemplate } from '../../utils/excelParser'
 
 export default function DataInterviewer() {
   const [filterRole, setFilterRole] = useState<'pusat' | 'cabang' | 'mentor' | ''>('')
@@ -109,6 +109,15 @@ export default function DataInterviewer() {
               <p className="text-xs text-gray-500 mt-1">
                 Kolom: ID, Nama, Role (pusat/cabang/mentor), Region, Email
               </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-6">
+              <button
+                onClick={downloadInterviewerTemplate}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors text-sm"
+              >
+                📥 Download Template
+              </button>
             </div>
           </div>
 

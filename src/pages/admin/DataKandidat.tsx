@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCandidateStore } from '../../store/candidateStore'
-import { parseExcelFile, downloadExcelTemplate } from '../../utils/excelParser'
+import { parseExcelFile, downloadCandidateTemplate } from '../../utils/excelParser'
 
 export default function DataKandidat() {
   const [filterRegion, setFilterRegion] = useState('')
@@ -107,7 +107,7 @@ export default function DataKandidat() {
 
             <div className="flex flex-col gap-2 pt-6">
               <button
-                onClick={downloadExcelTemplate}
+                onClick={downloadCandidateTemplate}
                 className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors text-sm"
               >
                 📥 Download Template

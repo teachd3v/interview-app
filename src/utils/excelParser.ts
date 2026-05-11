@@ -206,7 +206,7 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
   })
 }
 
-export const downloadExcelTemplate = () => {
+export const downloadCandidateTemplate = () => {
   const template = [
     {
       ID: '001',
@@ -224,6 +224,14 @@ export const downloadExcelTemplate = () => {
       Email: 'siti@email.com',
       TglLahir: '2003-08-22',
     },
+    {
+      ID: '003',
+      Nama: 'Budi Santoso',
+      Sekolah: 'SMA Negeri 3 Surabaya',
+      Wilayah: 'Jawa Timur',
+      Email: 'budi.santoso@email.com',
+      TglLahir: '2002-11-10',
+    },
   ]
 
   const ws = XLSX.utils.json_to_sheet(template)
@@ -234,4 +242,60 @@ export const downloadExcelTemplate = () => {
   ws['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 15 }]
 
   XLSX.writeFile(wb, 'template-kandidat.xlsx')
+}
+
+export const downloadInterviewerTemplate = () => {
+  const template = [
+    {
+      ID: 'int-001',
+      Nama: 'Dr. Bambang Sutrisno',
+      Role: 'pusat',
+      Region: 'DKI Jakarta',
+      Email: 'bambang.sutrisno@lpdp.go.id',
+    },
+    {
+      ID: 'int-002',
+      Nama: 'Ibu Sinta Wijaya',
+      Role: 'pusat',
+      Region: 'DKI Jakarta',
+      Email: 'sinta.wijaya@lpdp.go.id',
+    },
+    {
+      ID: 'int-003',
+      Nama: 'Pak Hendra Gunawan',
+      Role: 'cabang',
+      Region: 'Jawa Barat',
+      Email: 'hendra.gunawan@lpdp.go.id',
+    },
+    {
+      ID: 'int-004',
+      Nama: 'Dr. Eka Putri',
+      Role: 'cabang',
+      Region: 'Jawa Timur',
+      Email: 'eka.putri@lpdp.go.id',
+    },
+    {
+      ID: 'int-005',
+      Nama: 'Ahmad Syaiful (Mentor)',
+      Role: 'mentor',
+      Region: 'DKI Jakarta',
+      Email: 'ahmad.mentor@email.com',
+    },
+    {
+      ID: 'int-006',
+      Nama: 'Sri Rahayu (Mentor)',
+      Role: 'mentor',
+      Region: 'Jawa Barat',
+      Email: 'sri.mentor@email.com',
+    },
+  ]
+
+  const ws = XLSX.utils.json_to_sheet(template)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Interviewer')
+
+  // Auto-size columns
+  ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 30 }]
+
+  XLSX.writeFile(wb, 'template-interviewer.xlsx')
 }
