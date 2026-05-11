@@ -22,6 +22,7 @@ export default function FormWawancara() {
     setNotes,
     isPartBComplete,
     reset: resetForm,
+    initializeFromInstruments,
   } = useFormStore()
 
   const candidates = useCandidateStore((state) => state.candidates)
@@ -36,7 +37,13 @@ export default function FormWawancara() {
   useEffect(() => {
     loadCandidates()
     loadInstruments()
-  }, [loadCandidates, loadInstruments])
+  }, [])
+
+  useEffect(() => {
+    if (instruments.length > 0) {
+      initializeFromInstruments(instruments)
+    }
+  }, [instruments, initializeFromInstruments])
 
   const candidate = candidates.find((c) => c.id === candidateId)
 
@@ -48,6 +55,9 @@ export default function FormWawancara() {
 
   if (!candidate) return null
 
+  const isPartAComplete = () => partA.every((item) => item.value !== null)
+  const isPartCComplete = () => notes.trim().length > 0
+
   const handlePartAChange = (id: string, value: boolean) => {
     updatePartA(id, value)
     if (!value) {
@@ -57,6 +67,28 @@ export default function FormWawancara() {
         type: 'warning',
       })
       setTimeout(() => setToast(null), 4000)
+    }
+  }
+
+  const handleNext = () => {
+    if (activeTab === 'partA') {
+      if (!isPartAComplete()) {
+        setToast({
+          message: 'Harap lengkapi semua pertanyaan di Bagian A terlebih dahulu',
+          type: 'error',
+        })
+        return
+      }
+      setActiveTab('partB')
+    } else if (activeTab === 'partB') {
+      if (!isPartBComplete()) {
+        setToast({
+          message: 'Harap lengkapi semua pertanyaan di Bagian B terlebih dahulu',
+          type: 'error',
+        })
+        return
+      }
+      setActiveTab('partC')
     }
   }
 
@@ -301,17 +333,35 @@ export default function FormWawancara() {
           >
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!isPartBComplete()}
-            className={`px-8 py-2 font-semibold rounded-lg transition-colors text-white ${
-              isPartBComplete()
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}
-          >
-            Submit Nilai
-          </button>
+          {activeTab === 'partC' ? (
+            <button
+              onClick={handleSubmit}
+              disabled={!isPartBComplete()}
+              className={`px-8 py-2 font-semibold rounded-lg transition-colors text-white ${
+                isPartBComplete()
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Submit Nilai
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              disabled={activeTab === 'partA' ? !isPartAComplete() : !isPartBComplete()}
+              className={`px-8 py-2 font-semibold rounded-lg transition-colors text-white ${
+                activeTab === 'partA'
+                  ? isPartAComplete()
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-gray-400 cursor-not-allowed'
+                  : isPartBComplete()
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Lanjut
+            </button>
+          )}
         </div>
       </div>
 
