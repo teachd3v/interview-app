@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useInstrumentStore, Instrument } from '../../store/instrumentStore'
-import { parseInstrumentExcelFile, downloadInstrumentTemplate } from '../../utils/excelParser'
+import { parseInstrumentExcelFile, parseInstrumentCSVFile, downloadInstrumentTemplate } from '../../utils/excelParser'
 
 export default function DataInstrument() {
   const [filterBagian, setFilterBagian] = useState<'A' | 'B' | ''>('')
@@ -37,7 +37,10 @@ export default function DataInstrument() {
 
     setIsLoading(true)
     try {
-      const { instruments: parsed, errors } = await parseInstrumentExcelFile(file)
+      const isCSV = file.name.endsWith('.csv')
+      const { instruments: parsed, errors } = isCSV
+        ? await parseInstrumentCSVFile(file)
+        : await parseInstrumentExcelFile(file)
 
       if (errors.length > 0) {
         const errorMsg = errors.length > 0 ? `${errors.length} validation error(s): ${errors[0]}` : ''
@@ -52,8 +55,9 @@ export default function DataInstrument() {
         return
       }
 
-      setInstruments([...instruments, ...parsed])
-      setToast({ message: `Successfully imported ${parsed.length} instrument(s)`, type: 'success' })
+      // Replace existing instruments with new ones
+      setInstruments(parsed)
+      setToast({ message: `Successfully imported ${parsed.length} instrument(s). Existing instruments replaced.`, type: 'success' })
     } catch (error) {
       setToast({ message: `Import error: ${(error as Error).message}`, type: 'error' })
     } finally {
@@ -103,13 +107,13 @@ export default function DataInstrument() {
               </label>
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv"
                 onChange={handleFileUpload}
                 disabled={isLoading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Kolom: ID (opsional), Bagian (A/B), Aspek, Indikator, Keterangan
+                Format: Excel (.xlsx) atau CSV (.csv) dengan kolom Bagian, Aspek, Indikator, Keterangan
               </p>
             </div>
 

@@ -412,6 +412,105 @@ export const downloadInterviewerTemplate = () => {
   XLSX.writeFile(wb, 'template-interviewer.xlsx')
 }
 
+export const parseInstrumentCSVFile = (file: File): Promise<ParsedInstrumentData> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = (event) => {
+      try {
+        const csv = event.target?.result as string
+        const lines = csv.trim().split('\n')
+
+        if (lines.length < 2) {
+          reject(new Error('CSV file is empty or has only headers'))
+          return
+        }
+
+        // Skip header line
+        const dataLines = lines.slice(1)
+        const instruments: Instrument[] = []
+        const errors: string[] = []
+
+        dataLines.forEach((line, index) => {
+          try {
+            // Parse CSV line (handle quoted fields)
+            const parts: string[] = []
+            let current = ''
+            let inQuotes = false
+
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i]
+              if (char === '"') {
+                inQuotes = !inQuotes
+              } else if (char === ',' && !inQuotes) {
+                parts.push(current.trim())
+                current = ''
+              } else {
+                current += char
+              }
+            }
+            parts.push(current.trim())
+
+            if (parts.length < 3) {
+              errors.push(`Row ${index + 2}: Insufficient columns (expected at least Bagian, Aspek, Indikator)`)
+              return
+            }
+
+            let bagianRaw = parts[0]?.trim() || ''
+            const aspek = parts[1]?.trim() || ''
+            const indikator = parts[2]?.trim() || ''
+            const keterangan = parts[3]?.trim() || ''
+
+            // Normalize bagian
+            let bagian: 'A' | 'B'
+            if (bagianRaw.includes('WAJIB') || bagianRaw === 'A') {
+              bagian = 'A'
+            } else if (bagianRaw.includes('PENDUKUNG') || bagianRaw === 'B') {
+              bagian = 'B'
+            } else {
+              errors.push(`Row ${index + 2}: Bagian must contain "WAJIB" or "PENDUKUNG" or be A/B`)
+              return
+            }
+
+            if (!aspek) {
+              errors.push(`Row ${index + 2}: Aspek is required`)
+              return
+            }
+            if (!indikator) {
+              errors.push(`Row ${index + 2}: Indikator is required`)
+              return
+            }
+
+            instruments.push({
+              id: `inst-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              bagian,
+              aspek,
+              indikator,
+              keterangan,
+              urutan: instruments.length + 1,
+            })
+          } catch (error) {
+            errors.push(`Row ${index + 2}: Failed to parse row`)
+          }
+        })
+
+        resolve({
+          instruments,
+          errors,
+        })
+      } catch (error) {
+        reject(new Error(`Failed to parse CSV file: ${(error as Error).message}`))
+      }
+    }
+
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'))
+    }
+
+    reader.readAsText(file)
+  })
+}
+
 export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentData> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
