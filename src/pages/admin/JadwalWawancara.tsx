@@ -213,9 +213,9 @@ function CreateScheduleModal({ onClose, onCreate, candidates, interviewers }: Cr
   const [mentorId, setMentorId] = useState<string>('')
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([])
 
-  const pusat = mockInterviewers.find((i) => i.id === pusatId) || null
-  const cabang = mockInterviewers.find((i) => i.id === cabangId) || null
-  const mentor = mockInterviewers.find((i) => i.id === mentorId) || null
+  const pusat = interviewers.find((i) => i.id === pusatId) || null
+  const cabang = interviewers.find((i) => i.id === cabangId) || null
+  const mentor = interviewers.find((i) => i.id === mentorId) || null
 
   const handleToggleCandidate = (candId: string) => {
     setSelectedCandidateIds((prev) =>
