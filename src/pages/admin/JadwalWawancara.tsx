@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useScheduleStore } from '../../store/scheduleStore'
 import { useCandidateStore } from '../../store/candidateStore'
-import { mockInterviewers } from '../../mocks/data'
+import { useInterviewerStore } from '../../store/interviewerStore'
 
 export default function JadwalWawancara() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -18,10 +18,14 @@ export default function JadwalWawancara() {
   const candidates = useCandidateStore((state) => state.candidates)
   const loadCandidatesFromStorage = useCandidateStore((state) => state.loadFromLocalStorage)
 
+  const interviewers = useInterviewerStore((state) => state.interviewers)
+  const loadInterviewersFromStorage = useInterviewerStore((state) => state.loadFromLocalStorage)
+
   useEffect(() => {
     loadCandidatesFromStorage()
     loadSchedulesFromStorage()
-  }, [loadCandidatesFromStorage, loadSchedulesFromStorage])
+    loadInterviewersFromStorage()
+  }, [loadCandidatesFromStorage, loadSchedulesFromStorage, loadInterviewersFromStorage])
 
   const getCandidateName = (id: string) => {
     return candidates.find((c) => c.id === id)?.fullName || `Kandidat ${id}`
@@ -182,6 +186,7 @@ export default function JadwalWawancara() {
           onClose={() => setShowCreateModal(false)}
           onCreate={createSchedule}
           candidates={candidates}
+          interviewers={interviewers}
         />
       )}
     </div>
@@ -198,9 +203,10 @@ interface CreateScheduleModalProps {
     candidateIds: string[]
   ) => void
   candidates: any[]
+  interviewers: any[]
 }
 
-function CreateScheduleModal({ onClose, onCreate, candidates }: CreateScheduleModalProps) {
+function CreateScheduleModal({ onClose, onCreate, candidates, interviewers }: CreateScheduleModalProps) {
   const [date, setDate] = useState('')
   const [pusatId, setPusatId] = useState<string>('')
   const [cabangId, setCabangId] = useState<string>('')
@@ -241,6 +247,12 @@ function CreateScheduleModal({ onClose, onCreate, candidates }: CreateScheduleMo
         </div>
 
         <div className="p-6 space-y-6">
+          {interviewers.length === 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded text-sm">
+              ⚠️ Belum ada interviewer yang didaftarkan. Harap tambah data interviewer terlebih dahulu.
+            </div>
+          )}
+
           {/* Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
@@ -262,7 +274,7 @@ function CreateScheduleModal({ onClose, onCreate, candidates }: CreateScheduleMo
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Pilih...</option>
-                {mockInterviewers
+                {interviewers
                   .filter((i) => i.role === 'pusat')
                   .map((i) => (
                     <option key={i.id} value={i.id}>
@@ -282,7 +294,7 @@ function CreateScheduleModal({ onClose, onCreate, candidates }: CreateScheduleMo
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Pilih...</option>
-                {mockInterviewers
+                {interviewers
                   .filter((i) => i.role === 'cabang')
                   .map((i) => (
                     <option key={i.id} value={i.id}>
@@ -302,7 +314,7 @@ function CreateScheduleModal({ onClose, onCreate, candidates }: CreateScheduleMo
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Pilih...</option>
-                {mockInterviewers
+                {interviewers
                   .filter((i) => i.role === 'mentor')
                   .map((i) => (
                     <option key={i.id} value={i.id}>

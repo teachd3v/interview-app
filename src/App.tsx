@@ -3,6 +3,7 @@ import { useAuthStore } from './store/authStore'
 import LoginPage from './pages/LoginPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import DataKandidat from './pages/admin/DataKandidat'
+import DataInterviewer from './pages/admin/DataInterviewer'
 import JadwalWawancara from './pages/admin/JadwalWawancara'
 import InterviewerDashboard from './pages/interviewer/InterviewerDashboard'
 import FormWawancara from './pages/interviewer/FormWawancara'
@@ -20,6 +21,7 @@ export default function App() {
           <>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/kandidat" element={<DataKandidat />} />
+            <Route path="/admin/interviewer" element={<DataInterviewer />} />
             <Route path="/admin/jadwal" element={<JadwalWawancara />} />
           </>
         )}
