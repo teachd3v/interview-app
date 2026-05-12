@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export interface Schedule {
   id: string
+  region_id: string
   interview_date: string
   pusat_id?: string
   cabang_id?: string
@@ -54,6 +55,7 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
 
           return {
             id: schedule.id,
+            region_id: schedule.region_id,
             interview_date: schedule.interview_date,
             pusat_id: schedule.pusat_id,
             cabang_id: schedule.cabang_id,
@@ -85,8 +87,9 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
       }
 
       if (data && data.length > 0) {
-        const newSchedule = {
+        const newSchedule: Schedule = {
           id: data[0].id,
+          region_id: data[0].region_id,
           interview_date: data[0].interview_date,
           pusat_id: data[0].pusat_id,
           cabang_id: data[0].cabang_id,
@@ -136,9 +139,10 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
       }
 
       if (data && data.length > 0) {
-        // Build new schedules with candidate_ids
+        // Build new schedules with candidate_ids and region_id
         const newSchedules = data.map((schedule: any, index: number) => ({
           id: schedule.id,
+          region_id: schedule.region_id,
           interview_date: schedule.interview_date,
           pusat_id: schedule.pusat_id,
           cabang_id: schedule.cabang_id,
@@ -326,4 +330,20 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
       return null
     }
   },
+
+  getSchedulesByRegion: (regionId: string) => {
+    return scheduleState.schedules.filter((s) => s.region_id === regionId)
+  },
+
+  getSchedulesByRegionAndDate: (regionId: string, date: string) => {
+    return scheduleState.schedules.filter(
+      (s) => s.region_id === regionId && s.interview_date === date
+    )
+  },
 }))
+
+// Helper untuk get state
+let scheduleState = { schedules: [] as Schedule[] }
+useScheduleStore.subscribe((state: ScheduleStore) => {
+  scheduleState.schedules = state.schedules
+})

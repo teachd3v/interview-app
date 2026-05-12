@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import * as XLSX from 'xlsx'
 import { useFormResultsStore } from '../../store/formResultsStore'
 import { useCandidateStore } from '../../store/candidateStore'
 
@@ -53,6 +54,44 @@ export default function HasilAkhir() {
     return candidates.find((c) => c.id === id)?.region || '-'
   }
 
+  // Export semua hasil ke Excel
+  const handleExportAllResults = () => {
+    if (filteredResults.length === 0) return
+
+    const dataToExport = [
+      ['HASIL AKHIR WAWANCARA'],
+      [`Filter: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
+      [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
+      [],
+      ['Nama Kandidat', 'Wilayah', 'Part A', 'Part B (Skor)', 'Persentase', 'Tanggal'],
+      ...filteredResults.map((result) => [
+        getCandidateName(result.candidateId),
+        getCandidateRegion(result.candidateId),
+        result.partAPass ? 'Lulus' : 'Tidak Lulus',
+        `${result.partBTotal}/40`,
+        `${result.partBPercentage.toFixed(1)}%`,
+        formatDate(result.submittedAt),
+      ]),
+      [],
+      ['RINGKASAN STATISTIK'],
+      ['Total Dinilai:', filteredResults.length],
+      ['Lulus Part A:', filteredResults.filter((r) => r.partAPass).length],
+      ['Tidak Lulus Part A:', filteredResults.filter((r) => !r.partAPass).length],
+      ['Pass Rate:', `${passRate}%`],
+      ['Rata-rata Skor B:', avgScore],
+    ]
+
+    const ws = XLSX.utils.aoa_to_sheet(dataToExport)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Hasil Wawancara')
+
+    // Auto-size columns
+    ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }]
+
+    const fileName = `Hasil_Wawancara_${filterRegion === 'all' ? 'Semua' : filterRegion}_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -62,12 +101,25 @@ export default function HasilAkhir() {
             <h1 className="text-2xl font-bold text-gray-900">📊 Hasil Akhir Wawancara</h1>
             <p className="text-sm text-gray-600 mt-1">Rekap hasil assessment semua kandidat</p>
           </div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            ← Kembali
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExportAllResults}
+              disabled={filteredResults.length === 0}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                filteredResults.length === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              📥 Export Excel
+            </button>
+            <button
+              onClick={() => navigate('/admin')}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              ← Kembali
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import * as XLSX from 'xlsx'
 import { useAuthStore } from '../../store/authStore'
 import { useFormStore } from '../../store/formStore'
 import { useCandidateStore } from '../../store/candidateStore'
@@ -118,6 +119,9 @@ export default function FormWawancara() {
 
   const isPartAComplete = () => partA.every((item) => item.value !== null)
 
+  // Check if Part A has any "Tidak" (false) answers
+  const isPartAFailed = () => partA.some((item) => item.value === false)
+
   // Get current aspect and check if it's complete
   const aspectKeys = Object.keys(partBByAspect)
   const currentAspect = aspectKeys[currentAspectIndex]
@@ -144,6 +148,22 @@ export default function FormWawancara() {
         })
         return
       }
+
+      // Check if Part A has any "Tidak" (failed)
+      if (isPartAFailed()) {
+        // Set all Part B answers to 'no' (0 score)
+        partB.forEach((item) => {
+          updatePartB(item.id, 'no')
+        })
+        // Skip directly to Review (Step 4)
+        setCurrentStep(4)
+        setToast({
+          message: '⚠️ Kandidat tidak lulus kualifikasi wajib. Lanjut ke review dengan skor 0/0.',
+          type: 'warning',
+        })
+        return
+      }
+
       setCurrentStep(2)
       setCurrentAspectIndex(0)
     } else if (currentStep === 2) {
@@ -225,6 +245,50 @@ export default function FormWawancara() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Export hasil ke Excel
+  const handleExportExcel = () => {
+    if (!submittedResult) return
+
+    const dataToExport = [
+      ['HASIL WAWANCARA'],
+      [],
+      ['Informasi Kandidat'],
+      ['Nama:', submittedResult.candidateName],
+      ['ID Kandidat:', submittedResult.candidateId],
+      ['Tanggal Wawancara:', submittedResult.interviewDate],
+      ['Pewawancara ID:', submittedResult.interviewerId],
+      [],
+      ['KUALIFIKASI WAJIB (Part A)'],
+      ...submittedResult.partA.map((item) => [
+        item.label,
+        item.value ? 'Ya' : 'Tidak',
+      ]),
+      ['Status Part A:', submittedResult.partAPass ? 'LULUS' : 'TIDAK LULUS'],
+      [],
+      ['KUALIFIKASI PENDUKUNG (Part B)'],
+      ...submittedResult.partB.map((item) => [
+        item.label,
+        item.value === 'yes' ? 'Ya (2)' : item.value === 'maybe' ? 'Ragu (1)' : 'Tidak (0)',
+        item.score,
+      ]),
+      ['Total Skor Part B:', `${submittedResult.partBTotal}/40`],
+      ['Persentase:', `${submittedResult.partBPercentage.toFixed(2)}%`],
+      [],
+      ['CATATAN TAMBAHAN'],
+      [submittedResult.notes || '(Tidak ada catatan)'],
+    ]
+
+    const ws = XLSX.utils.aoa_to_sheet(dataToExport)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Hasil Wawancara')
+
+    // Auto-size columns
+    ws['!cols'] = [{ wch: 35 }, { wch: 30 }, { wch: 10 }]
+
+    const fileName = `Hasil_Wawancara_${submittedResult.candidateName.replace(/\s+/g, '_')}_${submittedResult.interviewDate}.xlsx`
+    XLSX.writeFile(wb, fileName)
   }
 
   // Step titles
@@ -578,15 +642,23 @@ export default function FormWawancara() {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                setShowSuccessModal(false)
-                navigate('/interviewer')
-              }}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              Kembali ke Dashboard
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleExportExcel}
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                📥 Export Excel
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false)
+                  navigate('/interviewer')
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
           </div>
         </div>
       )}

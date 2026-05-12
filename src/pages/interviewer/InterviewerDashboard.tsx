@@ -5,6 +5,7 @@ import { useScheduleStore } from '../../store/scheduleStore'
 import { useCandidateStore } from '../../store/candidateStore'
 import { useInterviewerStore } from '../../store/interviewerStore'
 import { useFormResultsStore } from '../../store/formResultsStore'
+import { useRegionStore } from '../../store/regionStore'
 
 // Format tanggal ke format Indonesia: Sabtu, 16 Mei 2026
 const formatDateIndonesian = (dateString: string): string => {
@@ -32,9 +33,11 @@ export default function InterviewerDashboard() {
   const candidates = useCandidateStore((state) => state.candidates)
   const interviewers = useInterviewerStore((state) => state.interviewers)
   const results = useFormResultsStore((state) => state.results)
+  const regions = useRegionStore((state) => state.regions)
 
   useEffect(() => {
     // Load data on mount
+    useRegionStore.getState().loadFromSupabase()
     useCandidateStore.getState().loadFromSupabase()
     useScheduleStore.getState().loadFromSupabase()
     useInterviewerStore.getState().loadFromSupabase()
@@ -64,17 +67,19 @@ export default function InterviewerDashboard() {
     }
   }, [interviewerId, role, navigate])
 
-  // Filter schedules berdasarkan role dan interviewer ID
-  const schedules = allSchedules.filter((schedule) => {
-    if (role === 'pusat') {
-      return schedule.pusat_id === interviewerId
-    } else if (role === 'cabang') {
-      return schedule.cabang_id === interviewerId
-    } else if (role === 'mentor') {
-      return schedule.mentor_id === interviewerId
-    }
-    return false
-  })
+  // Filter schedules berdasarkan role dan interviewer ID, sorted by date (ascending)
+  const schedules = allSchedules
+    .filter((schedule) => {
+      if (role === 'pusat') {
+        return schedule.pusat_id === interviewerId
+      } else if (role === 'cabang') {
+        return schedule.cabang_id === interviewerId
+      } else if (role === 'mentor') {
+        return schedule.mentor_id === interviewerId
+      }
+      return false
+    })
+    .sort((a, b) => new Date(a.interview_date).getTime() - new Date(b.interview_date).getTime())
 
   const handleLogout = () => {
     logout()
@@ -92,6 +97,11 @@ export default function InterviewerDashboard() {
   const getInterviewerName = (id: string | undefined) => {
     if (!id) return 'Belum ditentukan'
     return interviewers.find((i) => i.id === id)?.full_name || `Interviewer ${id}`
+  }
+
+  const getRegionName = (regionId: string | undefined) => {
+    if (!regionId) return 'Region tidak diketahui'
+    return regions.find((r) => r.id === regionId)?.name || `Region ${regionId}`
   }
 
   const hasBeenInterviewed = (candidateId: string) => {
@@ -171,9 +181,14 @@ export default function InterviewerDashboard() {
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">📅 {formatDateIndonesian(schedule.interview_date)}</h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">📅 {formatDateIndonesian(schedule.interview_date)}</h3>
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                        📍 {getRegionName(schedule.region_id)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">
                       🏛️ {getInterviewerName(schedule.pusat_id)} • 🏢 {getInterviewerName(schedule.cabang_id)} • 👨‍🏫 {getInterviewerName(schedule.mentor_id)}
                     </p>
                   </div>

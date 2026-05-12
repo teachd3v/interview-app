@@ -15,10 +15,12 @@ export interface ParsedInterviewerData {
 
 export interface ParsedScheduleData {
   schedules: Array<{
+    region_id: string
     interview_date: string
     pusat_id?: string
     cabang_id?: string
     mentor_id?: string
+    status: 'belum' | 'berjalan' | 'selesai'
     candidate_ids: string[]
   }>
   errors: string[]
@@ -271,12 +273,15 @@ export const downloadCandidateTemplate = () => {
   XLSX.writeFile(wb, 'template-kandidat.xlsx')
 }
 
-export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> => {
-  return new Promise((resolve, reject) => {
+export const parseScheduleExcelFile = async (file: File): Promise<ParsedScheduleData> => {
+  return new Promise(async (resolve, reject) => {
     const reader = new FileReader()
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
+        // Import supabase here to avoid circular dependencies
+        const { supabase } = await import('../lib/supabase')
+
         const data = new Uint8Array(event.target?.result as ArrayBuffer)
         const workbook = XLSX.read(data, { type: 'array' })
         const worksheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -293,11 +298,22 @@ export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> 
           return
         }
 
+        // Fetch regions for validation
+        const { data: regionsData, error: regionsError } = await supabase.from('regions').select('id, name, code')
+
+        if (regionsError) {
+          reject(new Error(`Failed to fetch regions: ${regionsError.message}`))
+          return
+        }
+
+        const regionMap = new Map((regionsData || []).map((r: any) => [r.code?.toUpperCase() || '', r.id]))
+
         const schedules: ParsedScheduleData['schedules'] = []
         const errors: string[] = []
 
         rows.forEach((row, index) => {
           try {
+            const wilayahCode = String(row['Wilayah'] || row['wilayah'] || row['Region'] || row['region'] || '').trim().toUpperCase()
             const date = String(row['TanggalWawancara'] || row['tanggalWawancara'] || row['Tanggal'] || row['Date'] || '').trim()
             const pusatId = String(row['IDInterviewerPusat'] || row['idInterviewerPusat'] || row['Pusat'] || '').trim()
             const cabangId = String(row['IDInterviewerCabang'] || row['idInterviewerCabang'] || row['Cabang'] || '').trim()
@@ -305,6 +321,17 @@ export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> 
             const daftarKandidatStr = String(row['DaftarKandidat'] || row['daftarKandidat'] || row['Kandidat'] || '').trim()
 
             // Validation
+            if (!wilayahCode) {
+              errors.push(`Row ${index + 2}: Wilayah (kode) is required`)
+              return
+            }
+
+            const regionId = regionMap.get(wilayahCode)
+            if (!regionId) {
+              errors.push(`Row ${index + 2}: Kode wilayah "${wilayahCode}" tidak ditemukan. Gunakan: ${Array.from(regionMap.keys()).join(', ')}`)
+              return
+            }
+
             if (!date) {
               errors.push(`Row ${index + 2}: TanggalWawancara is required`)
               return
@@ -339,10 +366,12 @@ export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> 
             }
 
             schedules.push({
+              region_id: regionId,
               interview_date: date,
               pusat_id: pusatId || undefined,
               cabang_id: cabangId || undefined,
               mentor_id: mentorId || undefined,
+              status: 'belum',
               candidate_ids: candidateIds,
             })
           } catch (error) {
@@ -625,6 +654,7 @@ export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentDa
 export const downloadScheduleTemplate = () => {
   const template = [
     {
+      Wilayah: 'LKT',
       TanggalWawancara: '2026-06-01',
       IDInterviewerPusat: 'int-001',
       IDInterviewerCabang: 'int-003',
@@ -632,6 +662,7 @@ export const downloadScheduleTemplate = () => {
       DaftarKandidat: '001,002,003',
     },
     {
+      Wilayah: 'PKB',
       TanggalWawancara: '2026-06-02',
       IDInterviewerPusat: 'int-002',
       IDInterviewerCabang: 'int-004',
@@ -639,6 +670,7 @@ export const downloadScheduleTemplate = () => {
       DaftarKandidat: '004,005',
     },
     {
+      Wilayah: 'PDG',
       TanggalWawancara: '2026-06-03',
       IDInterviewerPusat: 'int-001',
       IDInterviewerCabang: 'int-003',
@@ -652,24 +684,40 @@ export const downloadScheduleTemplate = () => {
   XLSX.utils.book_append_sheet(wb, ws, 'Jadwal')
 
   // Auto-size columns
-  ws['!cols'] = [{ wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 25 }]
+  ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 25 }]
 
-  // Add info sheet dengan penjelasan
+  // Add info sheet dengan mapping region code
   const infoData = [
     ['Format Jadwal Wawancara'],
     [],
     ['Kolom yang diperlukan:'],
+    ['- Wilayah: Kode wilayah (3 huruf) - lihat tabel mapping di bawah'],
     ['- TanggalWawancara: Format YYYY-MM-DD (contoh: 2026-06-01)'],
     ['- IDInterviewerPusat: ID dari data interviewer dengan role pusat (contoh: int-001)'],
     ['- IDInterviewerCabang: ID dari data interviewer dengan role cabang (contoh: int-003)'],
     ['- IDInterviewerMentor: ID dari data interviewer dengan role mentor (contoh: int-005)'],
     ['- DaftarKandidat: Comma-separated list ID kandidat (contoh: 001,002,003)'],
     [],
+    ['MAPPING WILAYAH:'],
+    ['Code | Nama Wilayah'],
+    ['LKT  | LANGKAT'],
+    ['PKB  | PEKANBARU'],
+    ['DMI  | DUMAI'],
+    ['PDG  | PADANG'],
+    ['PLB  | PALEMBANG'],
+    ['BGR  | BOGOR'],
+    ['YGY  | YOGYAKARTA'],
+    ['SBY  | SURABAYA'],
+    ['SNJ  | SINJAI'],
+    ['PDJ  | PIDIE JAYA'],
+    ['AUT  | ACEH UTARA'],
+    [],
     ['PENTING:'],
-    ['1. Interviewer IDs HARUS ada di Data Interviewer (format: int-001, int-002, dll)'],
-    ['2. Candidate IDs HARUS ada di Data Kandidat (format: 001, 002, dll)'],
-    ['3. TanggalWawancara format HARUS YYYY-MM-DD (tahun-bulan-tanggal)'],
-    ['4. Jangan gunakan spasi setelah koma pada DaftarKandidat, atau keduanya ok'],
+    ['1. Wilayah HARUS pakai KODE (LKT, PKB, DMI, dst) - lihat mapping di atas'],
+    ['2. Interviewer IDs HARUS ada di Data Interviewer (format: int-001, int-002, dll)'],
+    ['3. Candidate IDs HARUS ada di Data Kandidat (format: 001, 002, dll)'],
+    ['4. TanggalWawancara format HARUS YYYY-MM-DD (tahun-bulan-tanggal)'],
+    ['5. Jangan gunakan spasi setelah koma pada DaftarKandidat, atau keduanya ok'],
   ]
 
   const infoWs = XLSX.utils.aoa_to_sheet(infoData)

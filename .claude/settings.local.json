@@ -10,7 +10,8 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(pkill -f vite)",
       "Bash(findstr candidate *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(cd \"C:\\\\\\\\Users\\\\\\\\Asus VivoBook\\\\\\\\Documents\\\\\\\\LOCALHOST\\\\\\\\interview-app\")"
     ]
   }
 }
