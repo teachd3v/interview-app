@@ -262,14 +262,12 @@ interface InstrumentFormModalProps {
 }
 
 function InstrumentFormModal({ instrument, onClose, onSave }: InstrumentFormModalProps) {
-  const [id, setId] = useState(instrument?.id || `inst-${Date.now()}`)
+  const id = instrument?.id || `inst-${Date.now()}`
   const [bagian, setBagian] = useState<'A' | 'B'>(instrument?.bagian || 'B')
   const [aspek, setAspek] = useState(instrument?.aspek || '')
   const [indikator, setIndikator] = useState(instrument?.indikator || '')
   const [keterangan, setKeterangan] = useState(instrument?.keterangan || '')
   const [error, setError] = useState('')
-
-  const bagianLimits = { A: 8, B: 20 }
   const aspekOptions = [
     'Wajib',
     'Akademik',

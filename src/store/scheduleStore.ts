@@ -24,7 +24,7 @@ interface ScheduleStore {
   loadFromSupabase: () => Promise<void>
 }
 
-export const useScheduleStore = create<ScheduleStore>((set, get) => ({
+export const useScheduleStore = create<ScheduleStore>((set) => ({
   schedules: [],
 
   setSchedules: (schedules) => {

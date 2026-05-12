@@ -250,7 +250,7 @@ interface InterviewerFormModalProps {
 
 function InterviewerFormModal({ interviewer, onClose, onSave }: InterviewerFormModalProps) {
   const [id, setId] = useState(interviewer?.id || '')
-  const [fullName, setFullName] = useState(interviewer?.fullName || '')
+  const [fullName, setFullName] = useState(interviewer?.full_name || '')
   const [role, setRole] = useState<'pusat' | 'cabang' | 'mentor'>(interviewer?.role || 'pusat')
   const [region, setRegion] = useState(interviewer?.region || '')
   const [email, setEmail] = useState(interviewer?.email || '')
@@ -272,11 +272,11 @@ function InterviewerFormModal({ interviewer, onClose, onSave }: InterviewerFormM
 
     onSave({
       id,
-      fullName,
+      full_name: fullName,
       role,
       region,
       email,
-    })
+    } as Interviewer)
   }
 
   return (

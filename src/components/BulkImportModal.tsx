@@ -45,7 +45,6 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
   const instruments = useInstrumentStore((state) => state.instruments)
 
   const bulkAddSchedules = useScheduleStore((state) => state.bulkAddSchedules)
-  const schedules = useScheduleStore((state) => state.schedules)
 
   // Handle file preview untuk candidates
   const handleCandidateFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

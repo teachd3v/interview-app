@@ -20,7 +20,7 @@ interface CandidateStore {
   loadFromSupabase: () => Promise<void>
 }
 
-export const useCandidateStore = create<CandidateStore>((set, get) => ({
+export const useCandidateStore = create<CandidateStore>((set) => ({
   candidates: [],
 
   setCandidates: (candidates) => {

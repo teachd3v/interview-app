@@ -82,7 +82,7 @@ export default function FormWawancara() {
 
   // Timer countdown effect
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let interval: ReturnType<typeof setInterval>
     if (timerStarted && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining((prev) => prev - 1)
@@ -369,7 +369,7 @@ export default function FormWawancara() {
               {/* Aspect Sub-Stepper */}
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {Object.entries(partBByAspect).map(([aspect, indicators], index) => (
+                  {Object.entries(partBByAspect).map(([aspect], index) => (
                     <button
                       key={aspect}
                       onClick={() => setCurrentAspectIndex(index)}

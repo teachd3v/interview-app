@@ -16,9 +16,9 @@ export interface ParsedInterviewerData {
 export interface ParsedScheduleData {
   schedules: Array<{
     interview_date: string
-    pusat_id: string
-    cabang_id: string
-    mentor_id: string
+    pusat_id?: string
+    cabang_id?: string
+    mentor_id?: string
     candidate_ids: string[]
   }>
   errors: string[]

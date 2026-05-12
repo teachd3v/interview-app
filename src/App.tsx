@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useState } from 'react'
 import HomePage from './pages/HomePage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import DataKandidat from './pages/admin/DataKandidat'
@@ -13,9 +12,8 @@ import FormWawancara from './pages/interviewer/FormWawancara'
 import { useAuthStore } from './store/authStore'
 
 export default function App() {
-  const { role, setRole } = useAuthStore((state) => ({
-    role: state.role,
-    setRole: state.setRole
+  const { role } = useAuthStore((state) => ({
+    role: state.role
   }))
 
   return (
