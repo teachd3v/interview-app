@@ -3,30 +3,103 @@ import { useEffect } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useScheduleStore } from '../../store/scheduleStore'
 import { useCandidateStore } from '../../store/candidateStore'
+import { useInterviewerStore } from '../../store/interviewerStore'
+import { useFormResultsStore } from '../../store/formResultsStore'
+
+// Format tanggal ke format Indonesia: Sabtu, 16 Mei 2026
+const formatDateIndonesian = (dateString: string): string => {
+  const date = new Date(dateString + 'T00:00:00')
+
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+  const dayName = dayNames[date.getDay()]
+  const day = date.getDate()
+  const month = monthNames[date.getMonth()]
+  const year = date.getFullYear()
+
+  return `${dayName}, ${day} ${month} ${year}`
+}
 
 export default function InterviewerDashboard() {
   const navigate = useNavigate()
   const logout = useAuthStore((state) => state.logout)
   const role = useAuthStore((state) => state.role)
+  const interviewerId = useAuthStore((state) => state.interviewerId)
+  const interviewerName = useAuthStore((state) => state.interviewerName)
 
-  const schedules = useScheduleStore((state) => state.schedules)
-  const loadSchedules = useScheduleStore((state) => state.loadFromLocalStorage)
-
+  const allSchedules = useScheduleStore((state) => state.schedules)
   const candidates = useCandidateStore((state) => state.candidates)
-  const loadCandidates = useCandidateStore((state) => state.loadFromLocalStorage)
+  const interviewers = useInterviewerStore((state) => state.interviewers)
+  const results = useFormResultsStore((state) => state.results)
 
   useEffect(() => {
-    loadSchedules()
-    loadCandidates()
-  }, [loadSchedules, loadCandidates])
+    // Load data on mount
+    useCandidateStore.getState().loadFromSupabase()
+    useScheduleStore.getState().loadFromSupabase()
+    useInterviewerStore.getState().loadFromSupabase()
+    useFormResultsStore.getState().loadFromSupabase()
+
+    // Refresh results setiap 3 detik untuk detect perubahan terbaru
+    const refreshInterval = setInterval(() => {
+      useFormResultsStore.getState().loadFromSupabase()
+    }, 3000)
+
+    // Listen untuk window focus - refresh saat user kembali ke tab
+    const handleFocus = () => {
+      useFormResultsStore.getState().loadFromSupabase()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearInterval(refreshInterval)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
+
+  // Redirect ke select page jika belum memilih interviewer
+  useEffect(() => {
+    if (!interviewerId || !role || role === 'admin') {
+      navigate('/interviewer/select')
+    }
+  }, [interviewerId, role, navigate])
+
+  // Filter schedules berdasarkan role dan interviewer ID
+  const schedules = allSchedules.filter((schedule) => {
+    if (role === 'pusat') {
+      return schedule.pusat_id === interviewerId
+    } else if (role === 'cabang') {
+      return schedule.cabang_id === interviewerId
+    } else if (role === 'mentor') {
+      return schedule.mentor_id === interviewerId
+    }
+    return false
+  })
 
   const handleLogout = () => {
     logout()
     navigate('/')
   }
 
+  const handleChangeInterviewer = () => {
+    navigate('/interviewer/select')
+  }
+
   const getCandidateName = (id: string) => {
-    return candidates.find((c) => c.id === id)?.fullName || `Kandidat ${id}`
+    return candidates.find((c) => c.id === id)?.full_name || `Kandidat ${id}`
+  }
+
+  const getInterviewerName = (id: string | undefined) => {
+    if (!id) return 'Belum ditentukan'
+    return interviewers.find((i) => i.id === id)?.full_name || `Interviewer ${id}`
+  }
+
+  const hasBeenInterviewed = (candidateId: string) => {
+    return results.some((r) => r.candidateId === candidateId)
+  }
+
+  const getInterviewResult = (candidateId: string) => {
+    return results.find((r) => r.candidateId === candidateId)
   }
 
   const getStatusColor = (status: string) => {
@@ -61,15 +134,25 @@ export default function InterviewerDashboard() {
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Wawancara</h1>
-            <p className="text-sm text-gray-600 capitalize">Role: {role}</p>
+            <h1 className="text-2xl font-bold text-gray-900">📋 Jadwal Wawancara</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              <span className="font-medium">Pewawancara:</span> {interviewerName} <span className="text-gray-400">({role})</span>
+            </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleChangeInterviewer}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+            >
+              Ubah Pewawancara
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -89,9 +172,9 @@ export default function InterviewerDashboard() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">📅 {schedule.date}</h3>
-                    <p className="text-sm text-gray-600">
-                      {schedule.pusat?.fullName} • {schedule.cabang?.fullName} • {schedule.mentor?.fullName}
+                    <h3 className="text-lg font-semibold text-gray-900">📅 {formatDateIndonesian(schedule.interview_date)}</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      🏛️ {getInterviewerName(schedule.pusat_id)} • 🏢 {getInterviewerName(schedule.cabang_id)} • 👨‍🏫 {getInterviewerName(schedule.mentor_id)}
                     </p>
                   </div>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusColor(schedule.status)}`}>
@@ -102,26 +185,51 @@ export default function InterviewerDashboard() {
                 {/* Candidates List */}
                 <div className="mb-4 bg-gray-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-gray-700 mb-3">
-                    Kandidat ({schedule.candidateIds.length}):
+                    Kandidat ({(schedule.candidate_ids || []).length}):
                   </p>
                   <div className="space-y-2">
-                    {schedule.candidateIds.length === 0 ? (
+                    {(schedule.candidate_ids || []).length === 0 ? (
                       <p className="text-sm text-gray-500">Belum ada kandidat dijadwalkan</p>
                     ) : (
-                      schedule.candidateIds.map((candId) => (
+                      (schedule.candidate_ids || []).map((candId) => (
                         <div
                           key={candId}
                           className="flex justify-between items-center bg-white p-3 rounded border border-gray-200"
                         >
-                          <span className="text-sm font-medium text-gray-900">
-                            {getCandidateName(candId)} ({candId})
-                          </span>
-                          <Link
-                            to={`/interviewer/form/${candId}`}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded text-sm transition-colors"
-                          >
-                            Mulai Wawancara
-                          </Link>
+                          <div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {getCandidateName(candId)} ({candId})
+                            </span>
+                            {hasBeenInterviewed(candId) && getInterviewResult(candId) && (
+                              <div className="mt-1 flex gap-2">
+                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                  getInterviewResult(candId)?.partAPass
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {getInterviewResult(candId)?.partAPass ? '✓ Lulus' : '✗ Tidak Lulus'}
+                                </span>
+                                <span className="text-xs px-2 py-1 rounded-full font-semibold bg-blue-100 text-blue-700">
+                                  {getInterviewResult(candId)?.partBTotal}/40
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {hasBeenInterviewed(candId) ? (
+                            <button
+                              disabled
+                              className="bg-gray-400 text-white font-semibold py-1 px-3 rounded text-sm cursor-not-allowed"
+                            >
+                              ✓ Selesai
+                            </button>
+                          ) : (
+                            <Link
+                              to={`/interviewer/form/${candId}`}
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded text-sm transition-colors"
+                            >
+                              Mulai Wawancara
+                            </Link>
+                          )}
                         </div>
                       ))
                     )}

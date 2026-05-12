@@ -2,13 +2,17 @@ import { useState } from 'react'
 import {
   parseExcelFile,
   parseInterviewerExcelFile,
+  parseInstrumentExcelFile,
+  parseInstrumentCSVFile,
   parseScheduleExcelFile,
   downloadCandidateTemplate,
   downloadInterviewerTemplate,
+  downloadInstrumentTemplate,
   downloadScheduleTemplate,
 } from '../utils/excelParser'
 import { useCandidateStore } from '../store/candidateStore'
 import { useInterviewerStore } from '../store/interviewerStore'
+import { useInstrumentStore } from '../store/instrumentStore'
 import { useScheduleStore } from '../store/scheduleStore'
 
 interface BulkImportModalProps {
@@ -17,22 +21,97 @@ interface BulkImportModalProps {
 
 export default function BulkImportModal({ onClose }: BulkImportModalProps) {
   const [candidateFile, setCandidateFile] = useState<File | null>(null)
+  const [candidatePreview, setCandidatePreview] = useState<any[] | null>(null)
+
   const [interviewerFile, setInterviewerFile] = useState<File | null>(null)
+  const [interviewerPreview, setInterviewerPreview] = useState<any[] | null>(null)
+
+  const [instrumentFile, setInstrumentFile] = useState<File | null>(null)
+  const [instrumentPreview, setInstrumentPreview] = useState<any[] | null>(null)
+
   const [scheduleFile, setScheduleFile] = useState<File | null>(null)
+  const [schedulePreview, setSchedulePreview] = useState<any[] | null>(null)
+
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null)
 
-  const setCandidates = useCandidateStore((state) => state.setCandidates)
+  const bulkAddCandidates = useCandidateStore((state) => state.bulkAddCandidates)
   const candidates = useCandidateStore((state) => state.candidates)
 
-  const setInterviewers = useInterviewerStore((state) => state.setInterviewers)
+  const bulkAddInterviewers = useInterviewerStore((state) => state.bulkAddInterviewers)
   const interviewers = useInterviewerStore((state) => state.interviewers)
 
-  const createSchedule = useScheduleStore((state) => state.createSchedule)
+  const bulkAddInstruments = useInstrumentStore((state) => state.bulkAddInstruments)
+  const instruments = useInstrumentStore((state) => state.instruments)
+
+  const bulkAddSchedules = useScheduleStore((state) => state.bulkAddSchedules)
   const schedules = useScheduleStore((state) => state.schedules)
 
+  // Handle file preview untuk candidates
+  const handleCandidateFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setCandidateFile(file)
+    try {
+      const { candidates: parsed } = await parseExcelFile(file)
+      setCandidatePreview(parsed)
+    } catch (error) {
+      setMessage({ type: 'error', text: `Error parsing candidate file: ${(error as Error).message}` })
+      setCandidatePreview(null)
+    }
+  }
+
+  // Handle file preview untuk interviewers
+  const handleInterviewerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setInterviewerFile(file)
+    try {
+      const { interviewers: parsed } = await parseInterviewerExcelFile(file)
+      setInterviewerPreview(parsed)
+    } catch (error) {
+      setMessage({ type: 'error', text: `Error parsing interviewer file: ${(error as Error).message}` })
+      setInterviewerPreview(null)
+    }
+  }
+
+  // Handle file preview untuk instruments
+  const handleInstrumentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setInstrumentFile(file)
+    try {
+      const isCSV = file.name.endsWith('.csv')
+      const { instruments: parsed } = isCSV
+        ? await parseInstrumentCSVFile(file)
+        : await parseInstrumentExcelFile(file)
+      setInstrumentPreview(parsed)
+    } catch (error) {
+      setMessage({ type: 'error', text: `Error parsing instrument file: ${(error as Error).message}` })
+      setInstrumentPreview(null)
+    }
+  }
+
+  // Handle file preview untuk schedules
+  const handleScheduleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScheduleFile(file)
+    try {
+      const { schedules: parsed } = await parseScheduleExcelFile(file)
+      setSchedulePreview(parsed)
+    } catch (error) {
+      setMessage({ type: 'error', text: `Error parsing schedule file: ${(error as Error).message}` })
+      setSchedulePreview(null)
+    }
+  }
+
   const handleImport = async () => {
-    if (!candidateFile && !interviewerFile && !scheduleFile) {
+    if (!candidateFile && !interviewerFile && !instrumentFile && !scheduleFile) {
       setMessage({ type: 'error', text: 'Pilih minimal 1 file untuk diimport' })
       return
     }
@@ -41,84 +120,57 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
     setMessage(null)
 
     try {
-      let importedCandidates = candidates
-      let importedInterviewers = interviewers
+      let successCount = 0
       let errors: string[] = []
 
-      // Parse Candidates
-      if (candidateFile) {
+      // Import Candidates
+      if (candidatePreview && candidateFile) {
         try {
-          const { candidates: parsed, errors: parseErrors } = await parseExcelFile(candidateFile)
-          if (parseErrors.length > 0) {
-            errors = [...errors, ...parseErrors.map((e) => `Kandidat: ${e}`)]
-          } else {
-            const existingIds = new Set(importedCandidates.map((c) => c.id))
-            const newOnes = parsed.filter((c) => !existingIds.has(c.id))
-            importedCandidates = [...importedCandidates, ...newOnes]
-            setCandidates(importedCandidates)
+          const existingIds = new Set(candidates.map((c) => c.id))
+          const newOnes = candidatePreview.filter((c) => !existingIds.has(c.id))
+          if (newOnes.length > 0) {
+            await bulkAddCandidates(newOnes)
+            successCount++
           }
         } catch (error) {
           errors.push(`Kandidat: ${(error as Error).message}`)
         }
       }
 
-      // Parse Interviewers
-      if (interviewerFile) {
+      // Import Interviewers
+      if (interviewerPreview && interviewerFile) {
         try {
-          const { interviewers: parsed, errors: parseErrors } = await parseInterviewerExcelFile(interviewerFile)
-          if (parseErrors.length > 0) {
-            errors = [...errors, ...parseErrors.map((e) => `Interviewer: ${e}`)]
-          } else {
-            const existingIds = new Set(importedInterviewers.map((i) => i.id))
-            const newOnes = parsed.filter((i) => !existingIds.has(i.id))
-            importedInterviewers = [...importedInterviewers, ...newOnes]
-            setInterviewers(importedInterviewers)
+          const existingIds = new Set(interviewers.map((i) => i.id))
+          const newOnes = interviewerPreview.filter((i) => !existingIds.has(i.id))
+          if (newOnes.length > 0) {
+            await bulkAddInterviewers(newOnes)
+            successCount++
           }
         } catch (error) {
           errors.push(`Interviewer: ${(error as Error).message}`)
         }
       }
 
-      // Parse Schedules
-      if (scheduleFile) {
+      // Import Instruments
+      if (instrumentPreview && instrumentFile) {
         try {
-          const { schedules: parsed, errors: parseErrors } = await parseScheduleExcelFile(scheduleFile)
-          if (parseErrors.length > 0) {
-            errors = [...errors, ...parseErrors.map((e) => `Jadwal: ${e}`)]
-          } else {
-            // Validate that all referenced IDs exist
-            for (const schedule of parsed) {
-              const pusat = importedInterviewers.find((i) => i.id === schedule.pusatId)
-              const cabang = importedInterviewers.find((i) => i.id === schedule.cabangId)
-              const mentor = importedInterviewers.find((i) => i.id === schedule.mentorId)
+          const existingIds = new Set(instruments.map((i) => i.id))
+          const newOnes = instrumentPreview.filter((i) => !existingIds.has(i.id))
+          if (newOnes.length > 0) {
+            await bulkAddInstruments(newOnes)
+            successCount++
+          }
+        } catch (error) {
+          errors.push(`Instrumen: ${(error as Error).message}`)
+        }
+      }
 
-              if (!pusat) {
-                errors.push(`Jadwal ${schedule.date}: Interviewer Pusat ID ${schedule.pusatId} tidak ditemukan`)
-                continue
-              }
-              if (!cabang) {
-                errors.push(`Jadwal ${schedule.date}: Interviewer Cabang ID ${schedule.cabangId} tidak ditemukan`)
-                continue
-              }
-              if (!mentor) {
-                errors.push(`Jadwal ${schedule.date}: Interviewer Mentor ID ${schedule.mentorId} tidak ditemukan`)
-                continue
-              }
-
-              // Validate all candidate IDs exist
-              const missingCandidates = schedule.candidateIds.filter(
-                (id) => !importedCandidates.find((c) => c.id === id)
-              )
-              if (missingCandidates.length > 0) {
-                errors.push(
-                  `Jadwal ${schedule.date}: Kandidat tidak ditemukan: ${missingCandidates.join(', ')}`
-                )
-                continue
-              }
-
-              // Create schedule
-              createSchedule(schedule.date, pusat, cabang, mentor, schedule.candidateIds)
-            }
+      // Import Schedules
+      if (schedulePreview && scheduleFile) {
+        try {
+          if (schedulePreview.length > 0) {
+            await bulkAddSchedules(schedulePreview)
+            successCount++
           }
         } catch (error) {
           errors.push(`Jadwal: ${(error as Error).message}`)
@@ -133,7 +185,7 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
       } else {
         setMessage({
           type: 'success',
-          text: 'Semua data berhasil diimport!',
+          text: `Semua data berhasil diimport! (${successCount} tipe data)`,
         })
         setTimeout(() => onClose(), 2000)
       }
@@ -146,7 +198,7 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
           <h2 className="text-2xl font-semibold text-gray-900">Bulk Import Data</h2>
           <button
@@ -168,108 +220,219 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
                     : 'bg-blue-50 border border-blue-200 text-blue-800'
               }`}
             >
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs">
-                {message.text}
-              </pre>
+              {message.text}
             </div>
           )}
 
-          {/* Kandidat Section */}
+          {/* CANDIDATES SECTION */}
           <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-gray-900">1. Data Kandidat (Opsional)</h3>
-              <button
-                onClick={downloadCandidateTemplate}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                📥 Template
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">📥 Data Kandidat</h3>
             <input
               type="file"
               accept=".xlsx,.xls"
-              onChange={(e) => setCandidateFile(e.target.files?.[0] || null)}
-              disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+              onChange={handleCandidateFileChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3"
             />
-            <p className="text-xs text-gray-500 mt-2">
-              {candidateFile ? `✓ ${candidateFile.name}` : 'Pilih file Excel (.xlsx)'}
-            </p>
+            <button
+              onClick={downloadCandidateTemplate}
+              className="text-sm px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded mb-3"
+            >
+              Download Template
+            </button>
+
+            {candidatePreview && candidatePreview.length > 0 && (
+              <div className="mt-3 overflow-x-auto">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Preview ({candidatePreview.length} data):
+                </p>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border border-gray-200">
+                      <th className="px-2 py-1 text-left">Nama</th>
+                      <th className="px-2 py-1 text-left">Sekolah</th>
+                      <th className="px-2 py-1 text-left">Wilayah</th>
+                      <th className="px-2 py-1 text-left">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {candidatePreview.slice(0, 3).map((item, idx) => (
+                      <tr key={idx} className="border border-gray-200">
+                        <td className="px-2 py-1">{item.full_name}</td>
+                        <td className="px-2 py-1">{item.school}</td>
+                        <td className="px-2 py-1">{item.region}</td>
+                        <td className="px-2 py-1">{item.email}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {candidatePreview.length > 3 && (
+                  <p className="text-xs text-gray-500 mt-1">... dan {candidatePreview.length - 3} data lainnya</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Interviewer Section */}
+          {/* INTERVIEWERS SECTION */}
           <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-gray-900">2. Data Interviewer (Opsional)</h3>
-              <button
-                onClick={downloadInterviewerTemplate}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                📥 Template
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">📥 Data Interviewer</h3>
             <input
               type="file"
               accept=".xlsx,.xls"
-              onChange={(e) => setInterviewerFile(e.target.files?.[0] || null)}
-              disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+              onChange={handleInterviewerFileChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3"
             />
-            <p className="text-xs text-gray-500 mt-2">
-              {interviewerFile ? `✓ ${interviewerFile.name}` : 'Pilih file Excel (.xlsx)'}
-            </p>
+            <button
+              onClick={downloadInterviewerTemplate}
+              className="text-sm px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded mb-3"
+            >
+              Download Template
+            </button>
+
+            {interviewerPreview && interviewerPreview.length > 0 && (
+              <div className="mt-3 overflow-x-auto">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Preview ({interviewerPreview.length} data):
+                </p>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border border-gray-200">
+                      <th className="px-2 py-1 text-left">Nama</th>
+                      <th className="px-2 py-1 text-left">Role</th>
+                      <th className="px-2 py-1 text-left">Region</th>
+                      <th className="px-2 py-1 text-left">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {interviewerPreview.slice(0, 3).map((item, idx) => (
+                      <tr key={idx} className="border border-gray-200">
+                        <td className="px-2 py-1">{item.full_name}</td>
+                        <td className="px-2 py-1">{item.role}</td>
+                        <td className="px-2 py-1">{item.region}</td>
+                        <td className="px-2 py-1">{item.email}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {interviewerPreview.length > 3 && (
+                  <p className="text-xs text-gray-500 mt-1">... dan {interviewerPreview.length - 3} data lainnya</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Schedule Section */}
+          {/* INSTRUMENTS SECTION */}
           <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-gray-900">3. Jadwal Wawancara (Opsional)</h3>
-              <button
-                onClick={downloadScheduleTemplate}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                📥 Template
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">📥 Data Instrumen</h3>
             <input
               type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => setScheduleFile(e.target.files?.[0] || null)}
-              disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleInstrumentFileChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3"
             />
-            <p className="text-xs text-gray-500 mt-2">
-              {scheduleFile ? `✓ ${scheduleFile.name}` : 'Pilih file Excel (.xlsx)'}
-            </p>
-          </div>
+            <button
+              onClick={downloadInstrumentTemplate}
+              className="text-sm px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded mb-3"
+            >
+              Download Template
+            </button>
 
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-800">
-            <p className="font-semibold mb-1">💡 Tips:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Import data dalam urutan: Kandidat → Interviewer → Jadwal</li>
-              <li>Jadwal memerlukan ID yang sudah ada di Kandidat & Interviewer</li>
-              <li>Klik "Template" untuk download contoh format</li>
-              <li>Minimal upload 1 file untuk proceed</li>
-            </ul>
+            {instrumentPreview && instrumentPreview.length > 0 && (
+              <div className="mt-3 overflow-x-auto">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Preview ({instrumentPreview.length} data):
+                </p>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border border-gray-200">
+                      <th className="px-2 py-1 text-left">Bagian</th>
+                      <th className="px-2 py-1 text-left">Aspek</th>
+                      <th className="px-2 py-1 text-left">Indikator</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {instrumentPreview.slice(0, 3).map((item, idx) => (
+                      <tr key={idx} className="border border-gray-200">
+                        <td className="px-2 py-1">{item.bagian}</td>
+                        <td className="px-2 py-1">{item.aspek}</td>
+                        <td className="px-2 py-1 text-xs">{item.indikator?.substring(0, 40)}...</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {instrumentPreview.length > 3 && (
+                  <p className="text-xs text-gray-500 mt-1">... dan {instrumentPreview.length - 3} data lainnya</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="border-t border-gray-200 p-6 flex gap-3 justify-end bg-gray-50">
+        {/* SCHEDULES SECTION */}
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">📅 Data Jadwal Wawancara</h3>
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleScheduleFileChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3"
+          />
           <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium rounded-lg disabled:opacity-50"
+            onClick={downloadScheduleTemplate}
+            className="text-sm px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded mb-3"
           >
-            Batal
+            Download Template
           </button>
-          <button
-            onClick={handleImport}
-            disabled={isProcessing}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50"
-          >
-            {isProcessing ? 'Processing...' : 'Import Semua'}
-          </button>
+
+          {schedulePreview && schedulePreview.length > 0 && (
+            <div className="mt-3 overflow-x-auto">
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Preview ({schedulePreview.length} data):
+              </p>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 border border-gray-200">
+                    <th className="px-2 py-1 text-left">Tanggal</th>
+                    <th className="px-2 py-1 text-left">Pusat</th>
+                    <th className="px-2 py-1 text-left">Cabang</th>
+                    <th className="px-2 py-1 text-left">Mentor</th>
+                    <th className="px-2 py-1 text-left">Kandidat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedulePreview.slice(0, 3).map((item, idx) => (
+                    <tr key={idx} className="border border-gray-200">
+                      <td className="px-2 py-1">{item.interview_date}</td>
+                      <td className="px-2 py-1 text-xs">{item.pusat_id}</td>
+                      <td className="px-2 py-1 text-xs">{item.cabang_id}</td>
+                      <td className="px-2 py-1 text-xs">{item.mentor_id}</td>
+                      <td className="px-2 py-1 text-xs">{(item.candidate_ids || []).length} kandidat</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {schedulePreview.length > 3 && (
+                <p className="text-xs text-gray-500 mt-1">... dan {schedulePreview.length - 3} data lainnya</p>
+              )}
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="border-t border-gray-200 p-6 flex gap-3 justify-end bg-gray-50">
+        <button
+          onClick={onClose}
+          disabled={isProcessing}
+          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium rounded-lg disabled:opacity-50"
+        >
+          Batal
+        </button>
+        <button
+          onClick={handleImport}
+          disabled={isProcessing || (!candidateFile && !interviewerFile && !instrumentFile && !scheduleFile)}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50"
+        >
+          {isProcessing ? 'Mengimport...' : 'Import'}
+        </button>
       </div>
     </div>
   )

@@ -12,16 +12,15 @@ export default function DataInstrument() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const instruments = useInstrumentStore((state) => state.instruments)
-  const setInstruments = useInstrumentStore((state) => state.setInstruments)
   const addInstrument = useInstrumentStore((state) => state.addInstrument)
   const updateInstrument = useInstrumentStore((state) => state.updateInstrument)
   const deleteInstrument = useInstrumentStore((state) => state.deleteInstrument)
-  const loadFromLocalStorage = useInstrumentStore((state) => state.loadFromLocalStorage)
+  const bulkAddInstruments = useInstrumentStore((state) => state.bulkAddInstruments)
   const getAspekList = useInstrumentStore((state) => state.getAspekList)
 
   useEffect(() => {
-    loadFromLocalStorage()
-  }, [loadFromLocalStorage])
+    useInstrumentStore.getState().loadFromSupabase()
+  }, [])
 
   const filteredInstruments = instruments.filter((i) => {
     if (filterBagian && i.bagian !== filterBagian) return false
@@ -55,9 +54,16 @@ export default function DataInstrument() {
         return
       }
 
-      // Replace existing instruments with new ones
-      setInstruments(parsed)
-      setToast({ message: `Successfully imported ${parsed.length} instrument(s). Existing instruments replaced.`, type: 'success' })
+      // Filter out duplicates (avoid duplicate IDs)
+      const existingIds = new Set(instruments.map((i) => i.id))
+      const newInstruments = parsed.filter((i) => !existingIds.has(i.id))
+
+      if (newInstruments.length > 0) {
+        await bulkAddInstruments(newInstruments)
+        setToast({ message: `Successfully imported ${newInstruments.length} instrument(s)`, type: 'success' })
+      } else {
+        setToast({ message: 'No new instruments to import (all duplicates)', type: 'error' })
+      }
     } catch (error) {
       setToast({ message: `Import error: ${(error as Error).message}`, type: 'error' })
     } finally {

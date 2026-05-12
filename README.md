@@ -10,29 +10,37 @@ Sistem wawancara LPDP dengan fokus pada UI/UX testing di localhost.
 - **Tailwind CSS** - Styling
 - **React Router v6** - Routing
 - **Zustand** - State management
+- **Supabase** - Backend & Database
 
 ## Struktur Folder
 
 ```
 src/
-├── components/        # Reusable UI components (coming soon)
 ├── pages/
-│   ├── LoginPage.tsx
+│   ├── HomePage.tsx
 │   ├── admin/
 │   │   ├── AdminDashboard.tsx
 │   │   ├── DataKandidat.tsx
+│   │   ├── DataInterviewer.tsx
+│   │   ├── DataInstrument.tsx
 │   │   └── JadwalWawancara.tsx
 │   └── interviewer/
 │       ├── InterviewerDashboard.tsx
+│       ├── InterviewerSelectPage.tsx
 │       └── FormWawancara.tsx
 ├── store/
-│   ├── authStore.ts    # Auth state (role)
-│   └── formStore.ts    # Form state (Part A, B, C)
-├── mocks/
-│   └── data.ts         # Mock candidates, interviewers, schedules
-├── App.tsx             # Router setup
-├── main.tsx            # Entry point
-└── index.css           # Tailwind + custom styles
+│   ├── authStore.ts
+│   ├── candidateStore.ts
+│   ├── interviewerStore.ts
+│   ├── scheduleStore.ts
+│   ├── instrumentStore.ts
+│   ├── formStore.ts
+│   └── formResultsStore.ts
+├── lib/
+│   └── supabase.ts
+├── utils/
+│   └── excelParser.ts
+└── App.tsx
 ```
 
 ## Menjalankan Project
@@ -51,39 +59,35 @@ npm run build
 npm run preview
 ```
 
-## Feature Testing
-
-### Login Page
-- Klik salah satu tombol untuk mock login sebagai berbagai role:
-  - **Admin**: Dashboard admin dengan menu data kandidat & jadwal
-  - **Pusat/Cabang/Mentor**: Dashboard wawancara dengan form
+## Fitur Utama
 
 ### Admin Panel
-- **Data Kandidat**: Tabel dengan filter wilayah
-- **Jadwal Wawancara**: Assign interviewer ke jadwal
+- ✅ Data Kandidat (CRUD + bulk import)
+- ✅ Data Pewawancara (CRUD + bulk import)
+- ✅ Data Instrumen (CRUD + bulk import)
+- ✅ Jadwal Wawancara (CRUD + bulk import)
 
-### Interviewer Panel (PRIORITY)
-- **Dashboard**: Daftar kandidat yang akan diwawancara
-- **Form Wawancara**:
-  - **Part A**: 8 indikator kualifikasi wajib (toggle Ya/Tidak)
-  - **Part B**: 20 indikator kualifikasi pendukung, grouped by aspect (Ya/Ragu/Tidak)
-  - **Part C**: Textarea untuk catatan
-  - **Sticky header**: Info kandidat tetap terlihat saat scroll
-  - **Sidebar navigation**: Lompat antar bagian form
-  - **Floating action bar**: Tombol Batal & Submit
+### Interviewer Panel
+- ✅ Dashboard dengan jadwal wawancara
+- ✅ Form wawancara 4-step:
+  - Step 1: Kualifikasi Wajib (Part A) - 8 indicators
+  - Step 2: Kualifikasi Pendukung (Part B) - 20 indicators by aspect
+  - Step 3: Catatan Tambahan
+  - Step 4: Review & Submit
+- ✅ 20-minute countdown timer
+- ✅ Results saved to Supabase
+- ✅ Completion status on dashboard
 
-## Next Steps
+## Environment Variables
 
-1. ✅ Setup project structure & mock data
-2. ✅ Create basic pages & forms
-3. ⏳ Fine-tune Form UX (polish styling, responsiveness)
-4. ⏳ Add component library (shadcn/ui)
-5. ⏳ Add more animations & interactions
-6. ⏳ Connect to Supabase backend
+```
+VITE_SUPABASE_URL=https://rzzdinkudokfekolbhut.supabase.co
+VITE_SUPABASE_KEY=eyJhbGc... (dari .env.local)
+```
 
 ## Development Notes
 
-- Mock data dapat di-update di `src/mocks/data.ts`
-- State form di-manage dengan Zustand di `src/store/formStore.ts`
-- Tailwind custom colors di `tailwind.config.js`
-- Semua styling menggunakan Tailwind CSS (no component library yet)
+- State management menggunakan Zustand
+- All data persisted di Supabase PostgreSQL
+- Styling menggunakan Tailwind CSS
+- Role-based routing (admin, pusat, cabang, mentor)

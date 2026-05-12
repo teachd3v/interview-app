@@ -11,15 +11,14 @@ export default function DataInterviewer() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const interviewers = useInterviewerStore((state) => state.interviewers)
-  const setInterviewers = useInterviewerStore((state) => state.setInterviewers)
   const addInterviewer = useInterviewerStore((state) => state.addInterviewer)
   const updateInterviewer = useInterviewerStore((state) => state.updateInterviewer)
   const deleteInterviewer = useInterviewerStore((state) => state.deleteInterviewer)
-  const loadFromLocalStorage = useInterviewerStore((state) => state.loadFromLocalStorage)
+  const bulkAddInterviewers = useInterviewerStore((state) => state.bulkAddInterviewers)
 
   useEffect(() => {
-    loadFromLocalStorage()
-  }, [loadFromLocalStorage])
+    useInterviewerStore.getState().loadFromSupabase()
+  }, [])
 
   const filteredInterviewers = filterRole
     ? interviewers.filter((i) => i.role === filterRole)
@@ -48,10 +47,13 @@ export default function DataInterviewer() {
 
       const existingIds = new Set(interviewers.map((i) => i.id))
       const newInterviewers = parsedInterviewers.filter((i) => !existingIds.has(i.id))
-      const merged = [...interviewers, ...newInterviewers]
 
-      setInterviewers(merged)
-      setToast({ message: `Successfully imported ${newInterviewers.length} interviewer(s)`, type: 'success' })
+      if (newInterviewers.length > 0) {
+        await bulkAddInterviewers(newInterviewers)
+        setToast({ message: `Successfully imported ${newInterviewers.length} interviewer(s)`, type: 'success' })
+      } else {
+        setToast({ message: 'No new interviewers to import (all duplicates)', type: 'error' })
+      }
     } catch (error) {
       setToast({ message: `Import error: ${(error as Error).message}`, type: 'error' })
     } finally {
@@ -174,7 +176,7 @@ export default function DataInterviewer() {
                   <tr key={interviewer.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{interviewer.id}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {interviewer.fullName}
+                      {interviewer.full_name}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span

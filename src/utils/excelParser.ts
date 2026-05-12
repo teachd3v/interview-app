@@ -15,11 +15,11 @@ export interface ParsedInterviewerData {
 
 export interface ParsedScheduleData {
   schedules: Array<{
-    date: string
-    pusatId: string
-    cabangId: string
-    mentorId: string
-    candidateIds: string[]
+    interview_date: string
+    pusat_id: string
+    cabang_id: string
+    mentor_id: string
+    candidate_ids: string[]
   }>
   errors: string[]
 }
@@ -105,11 +105,11 @@ export const parseExcelFile = (file: File): Promise<ParsedCandidateData> => {
 
             candidates.push({
               id,
-              fullName,
+              full_name: fullName,
               school,
               region,
               email,
-              birthDate: formattedDate,
+              birth_date: formattedDate || null,
             })
           } catch (error) {
             errors.push(`Row ${index + 2}: Failed to parse row`)
@@ -162,7 +162,17 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
           try {
             const id = String(row['ID'] || row['id'] || row['Id'] || '').trim()
             const fullName = String(row['Nama'] || row['nama'] || row['Name'] || row['name'] || '').trim()
-            const role = String(row['Role'] || row['role'] || '').trim().toLowerCase()
+            let role = String(row['Role'] || row['role'] || '').trim().toLowerCase()
+
+            // Normalize role variations (handle "Pusat" → "pusat", etc)
+            if (role === 'pusat' || role === 'Pusat' || role === 'PUSAT') {
+              role = 'pusat'
+            } else if (role === 'cabang' || role === 'Cabang' || role === 'CABANG') {
+              role = 'cabang'
+            } else if (role === 'mentor' || role === 'Mentor' || role === 'MENTOR') {
+              role = 'mentor'
+            }
+
             const region = String(row['Region'] || row['region'] || row['Wilayah'] || row['wilayah'] || '').trim()
             const email = String(row['Email'] || row['email'] || '').trim()
 
@@ -176,7 +186,7 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
               return
             }
             if (!role || !['pusat', 'cabang', 'mentor'].includes(role)) {
-              errors.push(`Row ${index + 2}: Role must be pusat, cabang, or mentor`)
+              errors.push(`Row ${index + 2}: Role must be pusat, cabang, or mentor (case-insensitive)`)
               return
             }
             if (!region) {
@@ -196,7 +206,7 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
 
             interviewers.push({
               id,
-              fullName,
+              full_name: fullName,
               role: role as 'pusat' | 'cabang' | 'mentor',
               region,
               email,
@@ -306,11 +316,6 @@ export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> 
               return
             }
 
-            if (!pusatId || !cabangId || !mentorId) {
-              errors.push(`Row ${index + 2}: All interviewer IDs (Pusat, Cabang, Mentor) are required`)
-              return
-            }
-
             if (!daftarKandidatStr) {
               errors.push(`Row ${index + 2}: DaftarKandidat is required (comma-separated IDs)`)
               return
@@ -327,12 +332,18 @@ export const parseScheduleExcelFile = (file: File): Promise<ParsedScheduleData> 
               return
             }
 
+            // At least one interviewer should be provided
+            if (!pusatId && !cabangId && !mentorId) {
+              errors.push(`Row ${index + 2}: Minimal 1 interviewer ID harus diisi (Pusat, Cabang, atau Mentor)`)
+              return
+            }
+
             schedules.push({
-              date,
-              pusatId,
-              cabangId,
-              mentorId,
-              candidateIds,
+              interview_date: date,
+              pusat_id: pusatId || undefined,
+              cabang_id: cabangId || undefined,
+              mentor_id: mentorId || undefined,
+              candidate_ids: candidateIds,
             })
           } catch (error) {
             errors.push(`Row ${index + 2}: Failed to parse row`)
@@ -408,6 +419,26 @@ export const downloadInterviewerTemplate = () => {
 
   // Auto-size columns
   ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 30 }]
+
+  // Add info sheet dengan penjelasan
+  const infoData = [
+    ['Format Data Interviewer'],
+    [],
+    ['Kolom yang diperlukan:'],
+    ['- ID: Identifier unik (contoh: int-001, int-002, int-003)'],
+    ['- Nama: Nama lengkap interviewer'],
+    ['- Role: pusat, cabang, atau mentor (LOWERCASE)'],
+    ['- Region: Wilayah/Provinsi'],
+    ['- Email: Email address'],
+    [],
+    ['Catatan:'],
+    ['- Gunakan format ID yang konsisten (int-001, bukan int-01)'],
+    ['- Role HARUS lowercase: pusat, cabang, mentor'],
+  ]
+
+  const infoWs = XLSX.utils.aoa_to_sheet(infoData)
+  infoWs['!cols'] = [{ wch: 80 }]
+  XLSX.utils.book_append_sheet(wb, infoWs, 'Info')
 
   XLSX.writeFile(wb, 'template-interviewer.xlsx')
 }
@@ -594,21 +625,21 @@ export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentDa
 export const downloadScheduleTemplate = () => {
   const template = [
     {
-      TanggalWawancara: '2025-06-01',
+      TanggalWawancara: '2026-06-01',
       IDInterviewerPusat: 'int-001',
       IDInterviewerCabang: 'int-003',
       IDInterviewerMentor: 'int-005',
       DaftarKandidat: '001,002,003',
     },
     {
-      TanggalWawancara: '2025-06-02',
+      TanggalWawancara: '2026-06-02',
       IDInterviewerPusat: 'int-002',
       IDInterviewerCabang: 'int-004',
       IDInterviewerMentor: 'int-006',
       DaftarKandidat: '004,005',
     },
     {
-      TanggalWawancara: '2025-06-03',
+      TanggalWawancara: '2026-06-03',
       IDInterviewerPusat: 'int-001',
       IDInterviewerCabang: 'int-003',
       IDInterviewerMentor: 'int-005',
@@ -628,11 +659,17 @@ export const downloadScheduleTemplate = () => {
     ['Format Jadwal Wawancara'],
     [],
     ['Kolom yang diperlukan:'],
-    ['- TanggalWawancara: Format YYYY-MM-DD'],
-    ['- IDInterviewerPusat: ID dari data interviewer dengan role "pusat"'],
-    ['- IDInterviewerCabang: ID dari data interviewer dengan role "cabang"'],
-    ['- IDInterviewerMentor: ID dari data interviewer dengan role "mentor"'],
+    ['- TanggalWawancara: Format YYYY-MM-DD (contoh: 2026-06-01)'],
+    ['- IDInterviewerPusat: ID dari data interviewer dengan role pusat (contoh: int-001)'],
+    ['- IDInterviewerCabang: ID dari data interviewer dengan role cabang (contoh: int-003)'],
+    ['- IDInterviewerMentor: ID dari data interviewer dengan role mentor (contoh: int-005)'],
     ['- DaftarKandidat: Comma-separated list ID kandidat (contoh: 001,002,003)'],
+    [],
+    ['PENTING:'],
+    ['1. Interviewer IDs HARUS ada di Data Interviewer (format: int-001, int-002, dll)'],
+    ['2. Candidate IDs HARUS ada di Data Kandidat (format: 001, 002, dll)'],
+    ['3. TanggalWawancara format HARUS YYYY-MM-DD (tahun-bulan-tanggal)'],
+    ['4. Jangan gunakan spasi setelah koma pada DaftarKandidat, atau keduanya ok'],
   ]
 
   const infoWs = XLSX.utils.aoa_to_sheet(infoData)

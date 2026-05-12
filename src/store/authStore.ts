@@ -1,15 +1,36 @@
 import { create } from 'zustand'
-
-type Role = 'admin' | 'pusat' | 'cabang' | 'mentor' | null
+import { persist } from 'zustand/middleware'
 
 interface AuthStore {
-  role: Role
-  setRole: (role: Role) => void
+  role: string | null
+  interviewerId: string | null
+  interviewerName: string | null
+  setRole: (role: 'admin' | 'pusat' | 'cabang' | 'mentor' | null) => void
+  setInterviewer: (id: string, name: string) => void
   logout: () => void
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  role: null,
-  setRole: (role) => set({ role }),
-  logout: () => set({ role: null }),
-}))
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      role: null,
+      interviewerId: null,
+      interviewerName: null,
+
+      setRole: (role) => {
+        set({ role })
+      },
+
+      setInterviewer: (id, name) => {
+        set({ interviewerId: id, interviewerName: name })
+      },
+
+      logout: () => {
+        set({ role: null, interviewerId: null, interviewerName: null })
+      },
+    }),
+    {
+      name: 'auth-store',
+    }
+  )
+)

@@ -79,11 +79,14 @@ export default function AdminDashboard() {
           </Link>
 
           {/* Hasil Akhir Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Link
+            to="/admin/hasil"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          >
             <div className="text-3xl mb-2">📊</div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Hasil Akhir</h2>
-            <p className="text-sm text-gray-600">Rekap hasil (coming soon)</p>
-          </div>
+            <p className="text-sm text-gray-600">Rekap hasil wawancara</p>
+          </Link>
         </div>
       </div>
 

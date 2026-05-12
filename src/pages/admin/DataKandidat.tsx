@@ -7,15 +7,18 @@ export default function DataKandidat() {
   const [filterRegion, setFilterRegion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
 
   const candidates = useCandidateStore((state) => state.candidates)
-  const setCandidates = useCandidateStore((state) => state.setCandidates)
   const deleteCandidate = useCandidateStore((state) => state.deleteCandidate)
-  const loadFromLocalStorage = useCandidateStore((state) => state.loadFromLocalStorage)
+  const updateCandidate = useCandidateStore((state) => state.updateCandidate)
+  const addCandidate = useCandidateStore((state) => state.addCandidate)
+  const bulkAddCandidates = useCandidateStore((state) => state.bulkAddCandidates)
 
   useEffect(() => {
-    loadFromLocalStorage()
-  }, [loadFromLocalStorage])
+    useCandidateStore.getState().loadFromSupabase()
+  }, [])
 
   const filteredCandidates = filterRegion
     ? candidates.filter((c) => c.region === filterRegion)
@@ -44,13 +47,16 @@ export default function DataKandidat() {
         return
       }
 
-      // Merge with existing candidates (avoid duplicates by ID)
+      // Filter out duplicates (avoid duplicate IDs)
       const existingIds = new Set(candidates.map((c) => c.id))
       const newCandidates = parsedCandidates.filter((c) => !existingIds.has(c.id))
-      const merged = [...candidates, ...newCandidates]
 
-      setCandidates(merged)
-      setToast({ message: `Successfully imported ${newCandidates.length} candidate(s)`, type: 'success' })
+      if (newCandidates.length > 0) {
+        await bulkAddCandidates(newCandidates)
+        setToast({ message: `Successfully imported ${newCandidates.length} candidate(s)`, type: 'success' })
+      } else {
+        setToast({ message: 'No new candidates to import (all duplicates)', type: 'error' })
+      }
     } catch (error) {
       setToast({ message: `Import error: ${(error as Error).message}`, type: 'error' })
     } finally {
@@ -68,7 +74,12 @@ export default function DataKandidat() {
             ← Admin
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Data Kandidat</h1>
-          <div></div>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          >
+            + Tambah Manual
+          </button>
         </div>
       </div>
 
@@ -168,18 +179,26 @@ export default function DataKandidat() {
                   <tr key={candidate.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{candidate.id}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {candidate.fullName}
+                      {candidate.full_name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{candidate.school}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{candidate.region}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{candidate.email}</td>
                     <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => deleteCandidate(candidate.id)}
-                        className="text-red-600 hover:text-red-700 font-medium text-sm"
-                      >
-                        Hapus
-                      </button>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => setEditingId(candidate.id)}
+                          className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteCandidate(candidate.id)}
+                          className="text-red-600 hover:text-red-700 font-medium text-sm"
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -187,6 +206,252 @@ export default function DataKandidat() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Edit Modal */}
+      {editingId && (
+        <EditCandidateModal
+          candidate={candidates.find((c) => c.id === editingId)!}
+          onClose={() => setEditingId(null)}
+          onUpdate={updateCandidate}
+        />
+      )}
+
+      {/* Add Modal */}
+      {showAddForm && (
+        <AddCandidateModal
+          onClose={() => setShowAddForm(false)}
+          onAdd={addCandidate}
+        />
+      )}
+    </div>
+  )
+}
+
+interface EditCandidateModalProps {
+  candidate: any
+  onClose: () => void
+  onUpdate: (id: string, updates: any) => Promise<void>
+}
+
+function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModalProps) {
+  const [full_name, setFull_name] = useState(candidate.full_name)
+  const [school, setSchool] = useState(candidate.school)
+  const [region, setRegion] = useState(candidate.region)
+  const [email, setEmail] = useState(candidate.email)
+  const [birth_date, setBirth_date] = useState(candidate.birth_date)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!full_name || !school || !region) {
+      alert('Harap isi nama, sekolah, dan wilayah')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await onUpdate(candidate.id, {
+        full_name,
+        school,
+        region,
+        email,
+        birth_date,
+      })
+      onClose()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Edit Kandidat</h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+            <input
+              type="text"
+              value={full_name}
+              onChange={(e) => setFull_name(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sekolah</label>
+            <input
+              type="text"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Wilayah</label>
+            <input
+              type="text"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+            <input
+              type="date"
+              value={birth_date}
+              onChange={(e) => setBirth_date(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium rounded-lg disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50"
+          >
+            {isLoading ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface AddCandidateModalProps {
+  onClose: () => void
+  onAdd: (candidate: any) => Promise<void>
+}
+
+function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
+  const [full_name, setFull_name] = useState('')
+  const [school, setSchool] = useState('')
+  const [region, setRegion] = useState('')
+  const [email, setEmail] = useState('')
+  const [birth_date, setBirth_date] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!full_name || !school || !region) {
+      alert('Harap isi nama, sekolah, dan wilayah')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await onAdd({
+        full_name,
+        school,
+        region,
+        email,
+        birth_date,
+      })
+      onClose()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Tambah Kandidat Baru</h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+            <input
+              type="text"
+              value={full_name}
+              onChange={(e) => setFull_name(e.target.value)}
+              placeholder="Nama lengkap"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sekolah</label>
+            <input
+              type="text"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              placeholder="Nama sekolah"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Wilayah</label>
+            <input
+              type="text"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="Wilayah"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+            <input
+              type="date"
+              value={birth_date}
+              onChange={(e) => setBirth_date(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium rounded-lg disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50"
+          >
+            {isLoading ? 'Menambah...' : 'Tambah'}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { Instrument } from './instrumentStore'
 
 interface PartAIndicator {
   id: string
@@ -24,6 +25,7 @@ interface FormState {
   setNotes: (notes: string) => void
   reset: () => void
   isPartBComplete: () => boolean
+  initializeFromInstruments: (instruments: Instrument[]) => void
 }
 
 const defaultPartA: PartAIndicator[] = [
@@ -91,5 +93,26 @@ export const useFormStore = create<FormState>((set, get) => ({
   isPartBComplete: () => {
     const state = get()
     return state.partB.every((item) => item.value !== null)
+  },
+
+  initializeFromInstruments: (instruments) => {
+    const partA: PartAIndicator[] = instruments
+      .filter((i) => i.bagian === 'A')
+      .map((i) => ({
+        id: i.id,
+        label: i.indikator,
+        value: null,
+      }))
+
+    const partB: PartBIndicator[] = instruments
+      .filter((i) => i.bagian === 'B')
+      .map((i) => ({
+        id: i.id,
+        label: i.indikator,
+        aspect: i.aspek,
+        value: null,
+      }))
+
+    set({ partA, partB })
   },
 }))
