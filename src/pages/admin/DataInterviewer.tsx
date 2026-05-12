@@ -20,9 +20,10 @@ export default function DataInterviewer() {
     useInterviewerStore.getState().loadFromSupabase()
   }, [])
 
-  const filteredInterviewers = filterRole
+  const filteredInterviewers = (filterRole
     ? interviewers.filter((i) => i.role === filterRole)
     : interviewers
+  ).sort((a, b) => a.id.localeCompare(b.id))
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

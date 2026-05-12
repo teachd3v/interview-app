@@ -20,9 +20,10 @@ export default function DataKandidat() {
     useCandidateStore.getState().loadFromSupabase()
   }, [])
 
-  const filteredCandidates = filterRegion
+  const filteredCandidates = (filterRegion
     ? candidates.filter((c) => c.region === filterRegion)
     : candidates
+  ).sort((a, b) => a.id.localeCompare(b.id))
 
   const regions = [...new Set(candidates.map((c) => c.region))]
 
