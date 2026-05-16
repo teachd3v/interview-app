@@ -5,7 +5,7 @@ export interface FormResult {
   id: string
   candidateId: string
   candidateName: string
-  interviewerId?: string
+  interviewerId: string
   scheduleId?: string
   interviewDate: string
   submittedAt: string
@@ -31,6 +31,7 @@ interface FormResultsStore {
   results: FormResult[]
   setResults: (results: FormResult[]) => void
   addResult: (result: Omit<FormResult, 'id'>) => Promise<void>
+  updateNotes: (id: string, notes: string) => Promise<void>
   getResultsByCandidate: (candidateId: string) => FormResult[]
   getResultsBySchedule: (scheduleId: string) => FormResult[]
   loadFromSupabase: () => Promise<void>
@@ -50,6 +51,7 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
         .select(`
           id,
           candidate_id,
+          interviewer_id,
           schedule_id,
           submitted_at,
           part_a_results,
@@ -67,22 +69,29 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
         return
       }
 
-      // Map database fields ke format app
-      const mappedData = (data || []).map((item: any) => ({
-        id: item.id,
-        candidateId: item.candidate_id,
-        candidateName: item.candidates?.full_name || 'Unknown',
-        scheduleId: item.schedule_id,
-        interviewDate: new Date().toISOString().split('T')[0], // Use current date as fallback
-        submittedAt: item.submitted_at,
-        partA: item.part_a_results || [],
-        partB: item.part_b_results || [],
-        notes: item.notes || '',
-        partAPass: item.part_a_pass,
-        partBTotal: item.part_b_total || 0,
-        partBPercentage: item.part_b_percentage || 0,
-      }))
+      console.log('Raw results from Supabase:', data)
 
+      // Map database fields ke format app
+      const mappedData = (data || []).map((item: any) => {
+        const mapped = {
+          id: item.id,
+          candidateId: item.candidate_id,
+          interviewerId: item.interviewer_id || '',
+          candidateName: item.candidates?.full_name || 'Unknown',
+          scheduleId: item.schedule_id,
+          interviewDate: new Date(item.submitted_at).toISOString().split('T')[0],
+          submittedAt: item.submitted_at,
+          partA: item.part_a_results || [],
+          partB: item.part_b_results || [],
+          notes: item.notes || '',
+          partAPass: item.part_a_pass,
+          partBTotal: item.part_b_total || 0,
+          partBPercentage: item.part_b_percentage || 0,
+        }
+        return mapped
+      })
+
+      console.log('Mapped results:', mappedData)
       set({ results: mappedData })
     } catch (error) {
       console.error('Failed to load results:', error)
@@ -93,7 +102,8 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
     try {
       const dbPayload = {
         candidate_id: result.candidateId,
-        schedule_id: result.scheduleId, // Now should have value from schedule_candidates
+        interviewer_id: result.interviewerId,
+        schedule_id: result.scheduleId,
         submitted_at: result.submittedAt,
         part_a_results: result.partA,
         part_a_pass: result.partAPass,
@@ -110,13 +120,6 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
 
       if (error) {
         console.error('❌ Error adding result:', error)
-        console.error('📋 Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        })
-        // Show alert untuk user
         alert(`❌ Error menyimpan hasil: ${error.message}`)
         return
       }
@@ -125,10 +128,10 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
         const newResult = {
           id: data[0].id,
           candidateId: data[0].candidate_id,
+          interviewerId: data[0].interviewer_id,
           candidateName: result.candidateName,
-          interviewerId: result.interviewerId || '', // Use from input, not from DB
           scheduleId: data[0].schedule_id,
-          interviewDate: result.interviewDate, // Use from input, not from DB
+          interviewDate: result.interviewDate,
           submittedAt: data[0].submitted_at,
           partA: data[0].part_a_results || [],
           partB: data[0].part_b_results || [],
@@ -145,6 +148,27 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
     } catch (error) {
       console.error('❌ Failed to add result:', error)
       alert(`Error: ${(error as any).message}`)
+    }
+  },
+
+  updateNotes: async (id, notes) => {
+    try {
+      const { error } = await supabase
+        .from('assessment_results')
+        .update({ notes })
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error updating notes:', error)
+        alert('Gagal mengupdate catatan')
+        return
+      }
+
+      set((state) => ({
+        results: state.results.map((r) => (r.id === id ? { ...r, notes } : r)),
+      }))
+    } catch (error) {
+      console.error('Failed to update notes:', error)
     }
   },
 

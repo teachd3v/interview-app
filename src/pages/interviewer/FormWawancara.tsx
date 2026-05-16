@@ -10,7 +10,11 @@ import { useInstrumentStore } from '../../store/instrumentStore'
 export default function FormWawancara() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
-  const { interviewerId } = useAuthStore((state) => ({ interviewerId: state.interviewerId }))
+  const { interviewerId, interviewerName, role } = useAuthStore((state) => ({ 
+    interviewerId: state.interviewerId,
+    interviewerName: state.interviewerName,
+    role: state.role
+  }))
 
   // Form state
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
@@ -306,7 +310,12 @@ export default function FormWawancara() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{candidate.full_name}</h1>
-            <p className="text-sm text-gray-600">{candidate.school} • {candidate.region}</p>
+            <div className="flex flex-col">
+              <p className="text-sm text-gray-600">{candidate.school} • {candidate.region}</p>
+              <p className="text-xs text-blue-600 font-bold mt-1 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded inline-block w-fit">
+                👤 Penilai: {interviewerName} ({role})
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-6">
             {/* Timer */}
@@ -537,15 +546,15 @@ export default function FormWawancara() {
                   <h3 className="font-semibold text-gray-900 mb-2">Kualifikasi Pendukung (Part B)</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs text-gray-600">Total Skor</p>
-                      <p className="text-2xl font-bold text-blue-600">
+                      <p className="text-xs text-gray-600">Poin Mentah</p>
+                      <p className="text-2xl font-bold text-gray-500">
                         {partB.reduce((sum, item) => sum + (item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0), 0)}/40
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Persentase</p>
+                      <p className="text-xs text-gray-600">Skor Akhir</p>
                       <p className="text-2xl font-bold text-blue-600">
-                        {Math.round((partB.reduce((sum, item) => sum + (item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0), 0) / 40) * 100)}%
+                        {Math.round((partB.reduce((sum, item) => sum + (item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0), 0) / 40) * 100)}/100
                       </p>
                     </div>
                     <div>
@@ -636,8 +645,8 @@ export default function FormWawancara() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Part B (Skor)</p>
-                  <p className="text-lg font-bold text-blue-600">{submittedResult.partBTotal}/40</p>
+                  <p className="text-xs text-gray-500">Skor (0-100)</p>
+                  <p className="text-lg font-bold text-blue-600">{submittedResult.partBPercentage.toFixed(1)}/100</p>
                 </div>
               </div>
             </div>

@@ -105,11 +105,11 @@ export default function InterviewerDashboard() {
   }
 
   const hasBeenInterviewed = (candidateId: string) => {
-    return results.some((r) => r.candidateId === candidateId)
+    return results.some((r) => r.candidateId === candidateId && r.interviewerId === interviewerId)
   }
 
   const getInterviewResult = (candidateId: string) => {
-    return results.find((r) => r.candidateId === candidateId)
+    return results.find((r) => r.candidateId === candidateId && r.interviewerId === interviewerId)
   }
 
   const getStatusColor = (status: string) => {
@@ -231,12 +231,12 @@ export default function InterviewerDashboard() {
                             )}
                           </div>
                           {hasBeenInterviewed(candId) ? (
-                            <button
-                              disabled
-                              className="bg-gray-400 text-white font-semibold py-1 px-3 rounded text-sm cursor-not-allowed"
+                            <Link
+                              to={`/interviewer/hasil-detail/${getInterviewResult(candId)?.id}`}
+                              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded text-sm transition-colors"
                             >
-                              ✓ Selesai
-                            </button>
+                              Lihat Hasil
+                            </Link>
                           ) : (
                             <Link
                               to={`/interviewer/form/${candId}`}
