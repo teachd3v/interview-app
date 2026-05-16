@@ -3,12 +3,10 @@ import { useState, useEffect } from 'react'
 import { useFormResultsStore } from '../../store/formResultsStore'
 import { useCandidateStore } from '../../store/candidateStore'
 import { useInterviewerStore } from '../../store/interviewerStore'
-import { useAuthStore } from '../../store/authStore'
 
 export default function HasilDetail() {
   const { resultId } = useParams()
   const navigate = useNavigate()
-  const { role } = useAuthStore()
   
   const results = useFormResultsStore((state) => state.results)
   const candidates = useCandidateStore((state) => state.candidates)

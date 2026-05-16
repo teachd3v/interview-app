@@ -69,8 +69,6 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
         return
       }
 
-      console.log('Raw results from Supabase:', data)
-
       // Map database fields ke format app
       const mappedData = (data || []).map((item: any) => {
         const mapped = {
@@ -91,7 +89,6 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
         return mapped
       })
 
-      console.log('Mapped results:', mappedData)
       set({ results: mappedData })
     } catch (error) {
       console.error('Failed to load results:', error)
