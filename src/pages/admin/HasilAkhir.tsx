@@ -18,6 +18,7 @@ export default function HasilAkhir() {
   const [filterRegion, setFilterRegion] = useState<string>('all')
   const [filterInterviewer, setFilterInterviewer] = useState<string>('all')
   const [filterCandidate, setFilterCandidate] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'lulus' | 'tidak-lulus'>('all')
   const [isRegionSummaryOpen, setIsRegionSummaryOpen] = useState(false)
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function HasilAkhir() {
   useEffect(() => {
     setFilterInterviewer('all')
     setFilterCandidate('all')
+    setFilterStatus('all')
   }, [filterRegion])
 
   // Get unique regions dari candidates
@@ -81,29 +83,61 @@ export default function HasilAkhir() {
 
   const availableInterviewersForFilter = interviewers.filter(i => interviewerIdsWithResults.has(i.id))
 
-  // Filter results berdasarkan region, interviewer, dan kandidat
+  // Filter results berdasarkan region, interviewer, kandidat, dan status
   const filteredResults = results.filter((r) => {
     const candidate = candidates.find((c) => c.id === r.candidateId)
     const matchRegion = filterRegion === 'all' || candidate?.region === filterRegion
     const matchInterviewer = filterInterviewer === 'all' || r.interviewerId === filterInterviewer
     const matchCandidate = filterCandidate === 'all' || r.candidateId === filterCandidate
-    return matchRegion && matchInterviewer && matchCandidate
+    const matchStatus = 
+      filterStatus === 'all' || 
+      (filterStatus === 'lulus' ? r.partAPass : !r.partAPass)
+
+    return matchRegion && matchInterviewer && matchCandidate && matchStatus
   })
 
-  // Calculate stats
-  const totalCandidatesCount = candidates.length
-  const assessedCount = results.length
+  // Group results by candidate for stats
+  const groupedResultsForStats = results.reduce((acc: any, curr) => {
+    if (!acc[curr.candidateId]) acc[curr.candidateId] = []
+    acc[curr.candidateId].push(curr)
+    return acc
+  }, {})
+
+  const candidateSummaries = Object.entries(groupedResultsForStats).map(([candidateId, candResults]: [string, any]) => {
+    const candidate = candidates.find((c) => c.id === candidateId)
+    const isSelesai = candResults.length === 3
+    const passAll = isSelesai && candResults.every((r: any) => r.partAPass)
+    const failAny = isSelesai && candResults.some((r: any) => !r.partAPass)
+    const avgScore = candResults.reduce((sum: number, r: any) => sum + r.partBPercentage, 0) / candResults.length
+
+    return {
+      candidateId,
+      region: candidate?.region || '-',
+      isSelesai,
+      passAll,
+      failAny,
+      avgScore
+    }
+  })
+
+  // Filter summaries berdasarkan wilayah
+  const filteredSummaries = candidateSummaries.filter(s => 
+    filterRegion === 'all' || s.region === filterRegion
+  )
+
+  const totalSelesaiCount = filteredSummaries.filter(s => s.isSelesai).length
+  const lulusSyaratCount = filteredSummaries.filter(s => s.passAll).length
+  const tidakLulusCount = filteredSummaries.filter(s => s.failAny).length
   
-  // A. Total Kandidat (Calculation comparison)
-  const totalKandidatDisplay = `${assessedCount}/${totalCandidatesCount}`
-  
-  // B. Kandidat Lulus Syarat
-  const lulusSyaratCount = results.filter((r) => r.partAPass).length
-  
-  // C. Skor Rata-rata (Hanya yang lulus Part A)
-  const passedResults = results.filter((r) => r.partAPass)
-  const avgScore = passedResults.length > 0
-    ? (passedResults.reduce((sum, r) => sum + r.partBPercentage, 0) / passedResults.length).toFixed(1)
+  const totalKandidatInRegion = filterRegion === 'all' 
+    ? candidates.length 
+    : candidates.filter(c => c.region === filterRegion).length
+
+  const totalKandidatDisplay = `${totalSelesaiCount} / ${totalKandidatInRegion}`
+
+  const passedSummaries = filteredSummaries.filter(s => s.passAll)
+  const avgScoreDisplay = passedSummaries.length > 0
+    ? (passedSummaries.reduce((sum, s) => sum + s.avgScore, 0) / passedSummaries.length).toFixed(1)
     : '0'
 
   // Format date
@@ -217,23 +251,29 @@ export default function HasilAkhir() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-blue-100 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider">Total Kandidat</p>
+            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Total Kandidat Selesai</p>
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold text-blue-600">{totalKandidatDisplay}</p>
-              <p className="text-sm text-gray-400">selesai diinterview</p>
+              <p className="text-xs text-gray-400">selesai (3/3)</p>
             </div>
           </div>
           <div className="bg-white rounded-xl border border-green-100 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider">Kandidat Lulus Syarat</p>
+            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Kandidat Lulus Syarat</p>
             <p className="text-3xl font-bold text-green-600">{lulusSyaratCount}</p>
+            <p className="text-[10px] text-gray-400">Lulus di 3 interviewer</p>
+          </div>
+          <div className="bg-white rounded-xl border border-red-100 shadow-sm p-6">
+            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Kandidat Tidak Lulus</p>
+            <p className="text-3xl font-bold text-red-600">{tidakLulusCount}</p>
+            <p className="text-[10px] text-gray-400">Gagal di min. 1 interviewer</p>
           </div>
           <div className="bg-white rounded-xl border border-purple-100 shadow-sm p-6">
-            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider">Skor Rata-rata Kandidat</p>
+            <p className="text-sm font-medium text-gray-500 mb-1 uppercase tracking-wider text-[10px]">Skor Rata-rata Lulus</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-purple-600">{avgScore}</p>
-              <p className="text-sm text-gray-400">(Hanya yang Lulus Syarat)</p>
+              <p className="text-3xl font-bold text-purple-600">{avgScoreDisplay}</p>
+              <p className="text-xs text-gray-400">%</p>
             </div>
           </div>
         </div>
@@ -314,6 +354,19 @@ export default function HasilAkhir() {
                       ))}
                     </select>
                   </div>
+
+                  <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+                    <label className="text-sm font-semibold text-gray-700">Status:</label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as any)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    >
+                      <option value="all">Semua Status</option>
+                      <option value="lulus">Lulus Syarat</option>
+                      <option value="tidak-lulus">Tidak Lulus</option>
+                    </select>
+                  </div>
                 </>
               )}
             </div>
@@ -334,14 +387,12 @@ export default function HasilAkhir() {
                 {regions
                   .filter((r) => r !== 'all')
                   .map((region) => {
+                    const regionSummaries = candidateSummaries.filter(s => s.region === region)
                     const regionTotal = candidates.filter(c => c.region === region).length
-                    const regionResults = results.filter((r) => {
-                      const candidate = candidates.find((c) => c.id === r.candidateId)
-                      return candidate?.region === region
-                    })
-                    const regionPassed = regionResults.filter((r) => r.partAPass).length
+                    const regionSelesai = regionSummaries.filter(s => s.isSelesai).length
+                    const regionPassed = regionSummaries.filter(s => s.passAll).length
                     const regionAvg = regionPassed > 0
-                      ? (regionResults.filter(r => r.partAPass).reduce((sum, r) => sum + r.partBTotal, 0) / regionPassed).toFixed(2)
+                      ? (regionSummaries.filter(s => s.passAll).reduce((sum, s) => sum + s.avgScore, 0) / regionPassed).toFixed(1)
                       : '0'
 
                     return (
@@ -349,8 +400,8 @@ export default function HasilAkhir() {
                         <h3 className="font-bold text-gray-900 mb-2 border-b pb-1">{region}</h3>
                         <div className="space-y-1.5 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Progress:</span>
-                            <span className="font-bold text-blue-700">{regionResults.length}/{regionTotal}</span>
+                            <span className="text-gray-500">Selesai (3/3):</span>
+                            <span className="font-bold text-blue-700">{regionSelesai}/{regionTotal}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-500">Lulus Syarat:</span>
@@ -358,7 +409,7 @@ export default function HasilAkhir() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-500">Avg Skor (Lulus):</span>
-                            <span className="font-bold text-purple-600">{regionAvg}</span>
+                            <span className="font-bold text-purple-600">{regionAvg}%</span>
                           </div>
                         </div>
                       </div>
