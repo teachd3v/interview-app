@@ -13,8 +13,8 @@ export interface Candidate {
 interface CandidateStore {
   candidates: Candidate[]
   setCandidates: (candidates: Candidate[]) => void
-  addCandidate: (candidate: Omit<Candidate, 'id'>) => Promise<void>
-  bulkAddCandidates: (candidates: Omit<Candidate, 'id'>[]) => Promise<void>
+  addCandidate: (candidate: Candidate) => Promise<void>
+  bulkAddCandidates: (candidates: Candidate[]) => Promise<void>
   deleteCandidate: (id: string) => Promise<void>
   updateCandidate: (id: string, candidate: Partial<Candidate>) => Promise<void>
   loadFromSupabase: () => Promise<void>
@@ -63,6 +63,12 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
       if (error) {
         console.error('Error adding candidate:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        })
         return
       }
 

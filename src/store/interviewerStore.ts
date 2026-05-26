@@ -12,8 +12,8 @@ export interface Interviewer {
 interface InterviewerStore {
   interviewers: Interviewer[]
   setInterviewers: (interviewers: Interviewer[]) => void
-  addInterviewer: (interviewer: Omit<Interviewer, 'id'>) => Promise<void>
-  bulkAddInterviewers: (interviewers: Omit<Interviewer, 'id'>[]) => Promise<void>
+  addInterviewer: (interviewer: Interviewer) => Promise<void>
+  bulkAddInterviewers: (interviewers: Interviewer[]) => Promise<void>
   deleteInterviewer: (id: string) => Promise<void>
   updateInterviewer: (id: string, interviewer: Partial<Interviewer>) => Promise<void>
   getInterviewersByRole: (role: 'pusat' | 'cabang' | 'mentor') => Interviewer[]
@@ -63,6 +63,12 @@ export const useInterviewerStore = create<InterviewerStore>((set, get) => ({
 
       if (error) {
         console.error('Error adding interviewer:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        })
         return
       }
 

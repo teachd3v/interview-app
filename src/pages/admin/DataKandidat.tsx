@@ -256,7 +256,7 @@ function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModal
         school,
         region,
         email,
-        birth_date,
+        birth_date: birth_date || null,
       })
       onClose()
     } finally {
@@ -348,6 +348,7 @@ interface AddCandidateModalProps {
 }
 
 function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
+  const [id, setId] = useState('')
   const [full_name, setFull_name] = useState('')
   const [school, setSchool] = useState('')
   const [region, setRegion] = useState('')
@@ -356,19 +357,20 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (!full_name || !school || !region) {
-      alert('Harap isi nama, sekolah, dan wilayah')
+    if (!id || !full_name || !school || !region) {
+      alert('Harap isi ID, nama, sekolah, dan wilayah')
       return
     }
 
     setIsLoading(true)
     try {
       await onAdd({
+        id,
         full_name,
         school,
         region,
         email,
-        birth_date,
+        birth_date: birth_date || null,
       })
       onClose()
     } finally {
@@ -382,6 +384,17 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Tambah Kandidat Baru</h2>
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">ID Kandidat</label>
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="Contoh: 001"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
             <input
