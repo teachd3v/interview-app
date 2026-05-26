@@ -6,10 +6,14 @@ import DataInterviewer from './pages/admin/DataInterviewer'
 import DataInstrument from './pages/admin/DataInstrument'
 import JadwalWawancara from './pages/admin/JadwalWawancara'
 import HasilAkhir from './pages/admin/HasilAkhir'
+import HasilHomeVisit from './pages/admin/HasilHomeVisit'
+import HasilHomeVisitDetail from './pages/admin/HasilHomeVisitDetail'
+import ValidasiHomeVisit from './pages/admin/ValidasiHomeVisit'
 import HasilDetail from './pages/admin/HasilDetail'
 import InterviewerDashboard from './pages/interviewer/InterviewerDashboard'
 import InterviewerSelectPage from './pages/interviewer/InterviewerSelectPage'
 import FormWawancara from './pages/interviewer/FormWawancara'
+import FormHomeVisit from './pages/interviewer/FormHomeVisit'
 import { useAuthStore } from './store/authStore'
 
 export default function App() {
@@ -32,6 +36,9 @@ export default function App() {
             <Route path="/admin/instrumen" element={<DataInstrument />} />
             <Route path="/admin/jadwal" element={<JadwalWawancara />} />
             <Route path="/admin/hasil" element={<HasilAkhir />} />
+            <Route path="/admin/hasil-home-visit" element={<HasilHomeVisit />} />
+            <Route path="/admin/validasi-home-visit" element={<ValidasiHomeVisit />} />
+            <Route path="/admin/hasil-home-visit-detail/:id" element={<HasilHomeVisitDetail />} />
             <Route path="/admin/hasil-detail/:resultId" element={<HasilDetail />} />
           </>
         )}
@@ -42,6 +49,7 @@ export default function App() {
             <Route path="/interviewer/select" element={<InterviewerSelectPage />} />
             <Route path="/interviewer" element={<InterviewerDashboard />} />
             <Route path="/interviewer/form/:candidateId" element={<FormWawancara />} />
+            <Route path="/interviewer/home-visit/:candidateId" element={<FormHomeVisit />} />
             <Route path="/interviewer/hasil-detail/:resultId" element={<HasilDetail />} />
           </>
         )}

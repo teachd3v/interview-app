@@ -87,6 +87,26 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Hasil Akhir</h2>
             <p className="text-sm text-gray-600">Rekap hasil wawancara</p>
           </Link>
+
+          {/* Hasil Home Visit Card */}
+          <Link
+            to="/admin/hasil-home-visit"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">🏠</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Hasil Home Visit</h2>
+            <p className="text-sm text-gray-600">Rekap hasil observasi lapangan</p>
+          </Link>
+
+          {/* Validasi Home Visit Card */}
+          <Link
+            to="/admin/validasi-home-visit"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">⚖️</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Validasi Home Visit</h2>
+            <p className="text-sm text-gray-600">Tentukan kandidat layak visit</p>
+          </Link>
         </div>
       </div>
 

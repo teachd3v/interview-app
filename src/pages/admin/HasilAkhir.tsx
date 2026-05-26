@@ -152,6 +152,14 @@ export default function HasilAkhir() {
     return candidates.find((c) => c.id === id)?.full_name || `Kandidat ${id}`
   }
 
+  const getCandidateSchool = (id: string) => {
+    return candidates.find((c) => c.id === id)?.school || '-'
+  }
+
+  const getCandidateEmail = (id: string) => {
+    return candidates.find((c) => c.id === id)?.email || '-'
+  }
+
   const getCandidateRegion = (id: string) => {
     return candidates.find((c) => c.id === id)?.region || '-'
   }
@@ -173,10 +181,12 @@ export default function HasilAkhir() {
         [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
         [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
         [],
-        ['Interviewer', 'Nama Kandidat', 'Wilayah', 'Lulus Syarat', 'Skor Kompetensi', 'Tanggal'],
+        ['Interviewer', 'Nama Kandidat', 'Sekolah', 'Email', 'Wilayah', 'Lulus Syarat', 'Skor Kompetensi', 'Tanggal'],
         ...filteredResults.map((result) => [
           getInterviewerDisplay(result.interviewerId),
           getCandidateName(result.candidateId),
+          getCandidateSchool(result.candidateId),
+          getCandidateEmail(result.candidateId),
           getCandidateRegion(result.candidateId),
           result.partAPass ? 'Lulus' : 'Tidak Lulus',
           result.partBPercentage.toFixed(1),
@@ -187,7 +197,7 @@ export default function HasilAkhir() {
       const ws = XLSX.utils.aoa_to_sheet(dataToExport)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Hasil Wawancara')
-      ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }]
+      ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }]
       XLSX.writeFile(wb, `Hasil_Wawancara_Lengkap_${new Date().toISOString().split('T')[0]}.xlsx`)
     } else {
       if (leaderboard.length === 0) return
@@ -197,11 +207,13 @@ export default function HasilAkhir() {
         [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
         [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
         [],
-        ['Ranking', 'ID Kandidat', 'Nama Kandidat', 'Wilayah', 'Rata-rata Skor (%)'],
+        ['Ranking', 'ID Kandidat', 'Nama Kandidat', 'Sekolah', 'Email', 'Wilayah', 'Rata-rata Skor (%)'],
         ...leaderboard.map((item, index) => [
           index + 1,
           item.candidateId,
           item.candidateName,
+          getCandidateSchool(item.candidateId),
+          getCandidateEmail(item.candidateId),
           item.region,
           item.avgScore.toFixed(2),
         ]),
@@ -210,7 +222,7 @@ export default function HasilAkhir() {
       const ws = XLSX.utils.aoa_to_sheet(dataToExport)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Rekapitulasi')
-      ws['!cols'] = [{ wch: 10 }, { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 20 }]
+      ws['!cols'] = [{ wch: 10 }, { wch: 15 }, { wch: 30 }, { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 20 }]
       XLSX.writeFile(wb, `Rekapitulasi_Leaderboard_${new Date().toISOString().split('T')[0]}.xlsx`)
     }
   }
