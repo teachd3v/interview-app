@@ -96,27 +96,24 @@ export default function HasilAkhir() {
     return matchRegion && matchInterviewer && matchCandidate && matchStatus
   })
 
-  // Group results by candidate for stats
-  const groupedResultsForStats = results.reduce((acc: any, curr) => {
-    if (!acc[curr.candidateId]) acc[curr.candidateId] = []
-    acc[curr.candidateId].push(curr)
-    return acc
-  }, {})
-
-  const candidateSummaries = Object.entries(groupedResultsForStats).map(([candidateId, candResults]: [string, any]) => {
-    const candidate = candidates.find((c) => c.id === candidateId)
+  // Group results by candidate for stats - Simplified to use candidates directly for better counts
+  const candidateSummaries = candidates.map((candidate) => {
+    const candResults = results.filter(r => r.candidateId === candidate.id)
     const isSelesai = candResults.length === 3
     const passAll = isSelesai && candResults.every((r: any) => r.partAPass)
     const failAny = isSelesai && candResults.some((r: any) => !r.partAPass)
-    const avgScore = candResults.reduce((sum: number, r: any) => sum + r.partBPercentage, 0) / candResults.length
+    const avgScore = candResults.length > 0 
+      ? candResults.reduce((sum: number, r: any) => sum + r.partBPercentage, 0) / candResults.length
+      : 0
 
     return {
-      candidateId,
-      region: candidate?.region || '-',
+      candidateId: candidate.id,
+      region: candidate.region || '-',
       isSelesai,
       passAll,
       failAny,
-      avgScore
+      avgScore,
+      resultsCount: candResults.length
     }
   })
 
@@ -391,6 +388,8 @@ export default function HasilAkhir() {
                     const regionTotal = candidates.filter(c => c.region === region).length
                     const regionSelesai = regionSummaries.filter(s => s.isSelesai).length
                     const regionPassed = regionSummaries.filter(s => s.passAll).length
+                    const regionFailed = regionSummaries.filter(s => s.failAny).length
+                    const regionIncomplete = regionTotal - regionSelesai
                     const regionAvg = regionPassed > 0
                       ? (regionSummaries.filter(s => s.passAll).reduce((sum, s) => sum + s.avgScore, 0) / regionPassed).toFixed(1)
                       : '0'
@@ -406,6 +405,14 @@ export default function HasilAkhir() {
                           <div className="flex justify-between">
                             <span className="text-gray-500">Lulus Syarat:</span>
                             <span className="font-bold text-green-600">{regionPassed}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Tidak Lulus:</span>
+                            <span className="font-bold text-red-600">{regionFailed}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-dashed pt-1.5 mt-1.5">
+                            <span className="text-gray-500">Belum Selesai:</span>
+                            <span className="font-bold text-orange-600">{regionIncomplete}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-500">Avg Skor (Lulus):</span>
