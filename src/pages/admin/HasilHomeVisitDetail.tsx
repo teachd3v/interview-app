@@ -117,9 +117,11 @@ export default function HasilHomeVisitDetail() {
                 <div key={item.id} className="space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <p className="text-sm font-bold text-gray-700 leading-relaxed">{item.label}</p>
-                    <span className={`px-4 py-1 rounded-full text-xs font-black uppercase shrink-0 ${item.value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {item.value ? 'Ya' : 'Tidak'}
-                    </span>
+                    {!item.id.startsWith('foto_') && (
+                      <span className={`px-4 py-1 rounded-full text-xs font-black uppercase shrink-0 ${item.value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {item.value ? 'Ya' : 'Tidak'}
+                      </span>
+                    )}
                   </div>
                   {item.note && (
                     <div className="p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
@@ -152,12 +154,14 @@ export default function HasilHomeVisitDetail() {
                 <div key={item.id} className="space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-blue-600 uppercase mb-1">{item.aspect}</p>
+                      {item.aspect && <p className="text-[10px] font-black text-blue-600 uppercase mb-1">{item.aspect}</p>}
                       <p className="text-sm font-bold text-gray-700 leading-relaxed">{item.label}</p>
                     </div>
-                    <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black shrink-0">
-                      Skor: {item.score}
-                    </span>
+                    {!item.id.startsWith('foto_') && (
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black shrink-0">
+                        Skor: {item.score}
+                      </span>
+                    )}
                   </div>
                   {item.note && (
                     <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-200">

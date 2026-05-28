@@ -31,10 +31,16 @@ export default function FormHomeVisit() {
   const [partCNotes, setPartCNotes] = useState<Record<string, string>>({})
   
   // Photo Evidence state
-  const [evidenceFilesA, setEvidenceFilesA] = useState<Record<string, File[]>>({})
-  const [evidenceFilesB, setEvidenceFilesB] = useState<Record<string, File[]>>({})
-  const [evidenceFilesC, setEvidenceFilesC] = useState<Record<string, File[]>>({})
+  type PhotoState = { file: File | null; preview: string | null }
+  const [fotoVisit, setFotoVisit] = useState<PhotoState>({ file: null, preview: null })
+  const [fotoOrtu, setFotoOrtu] = useState<PhotoState>({ file: null, preview: null })
+  const [fotoPeserta, setFotoPeserta] = useState<PhotoState>({ file: null, preview: null })
+
+  const [fotoDepan, setFotoDepan] = useState<PhotoState>({ file: null, preview: null })
+  const [fotoDalam, setFotoDalam] = useState<PhotoState>({ file: null, preview: null })
+  const [fotoBelakang, setFotoBelakang] = useState<PhotoState>({ file: null, preview: null })
   
+  const [uploadedUrls, setUploadedUrls] = useState<Record<string, string>>({})
   const [generalNotes, setGeneralNotes] = useState('')
 
   const candidates = useCandidateStore((state) => state.candidates)
@@ -43,32 +49,26 @@ export default function FormHomeVisit() {
   useEffect(() => {
     useCandidateStore.getState().loadFromSupabase()
     
-    // Initialize answers, notes, and evidence
+    // Initialize answers and notes
     const initialA: Record<string, boolean | null> = {}
     const initialB: Record<string, number | null> = {}
     const initialC: Record<string, number | null> = {}
     const initialANotes: Record<string, string> = {}
     const initialBNotes: Record<string, string> = {}
     const initialCNotes: Record<string, string> = {}
-    const initialAEv: Record<string, File[]> = {}
-    const initialBEv: Record<string, File[]> = {}
-    const initialCEv: Record<string, File[]> = {}
     
     homeVisitInstrument.forEach(q => {
       if (q.section === 'A') {
         initialA[q.id] = null
         initialANotes[q.id] = ''
-        initialAEv[q.id] = []
       }
       else if (q.section === 'B') {
         initialB[q.id] = null
         initialBNotes[q.id] = ''
-        initialBEv[q.id] = []
       }
       else if (q.section === 'C') {
         initialC[q.id] = null
         initialCNotes[q.id] = ''
-        initialCEv[q.id] = []
       }
     })
     
@@ -78,9 +78,6 @@ export default function FormHomeVisit() {
     setPartANotes(initialANotes)
     setPartBNotes(initialBNotes)
     setPartCNotes(initialCNotes)
-    setEvidenceFilesA(initialAEv)
-    setEvidenceFilesB(initialBEv)
-    setEvidenceFilesC(initialCEv)
   }, [])
 
   const candidate = candidates.find((c) => c.id === candidateId)
@@ -101,78 +98,50 @@ export default function FormHomeVisit() {
   const isStep2Complete = () => questionsB.every(q => partBAnswers[q.id] !== null)
   const isStep3Complete = () => questionsC.every(q => partCAnswers[q.id] !== null)
 
-  const handleFileChange = (section: 'A' | 'B' | 'C', qId: string, files: FileList | null) => {
-    if (!files) return
-
-    const selectedFiles = Array.from(files)
+  const handlePhotoChange = (file: File | null, setter: React.Dispatch<React.SetStateAction<PhotoState>>) => {
+    if (!file) return;
     
-    // Validasi: Maks 3 file
-    const currentFiles = section === 'A' ? evidenceFilesA[qId] : section === 'B' ? evidenceFilesB[qId] : evidenceFilesC[qId]
-    if (currentFiles.length + selectedFiles.length > 3) {
-      setToast({ message: 'Maksimal 3 foto per indikator', type: 'error' })
+    // Validasi: Format & Ukuran (5MB)
+    const isValidType = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type)
+    if (!isValidType) {
+      setToast({ message: 'Format file harus JPG/PNG/WEBP', type: 'error' })
       return
     }
 
-    // Validasi: Format & Ukuran (5MB)
-    const validFiles = selectedFiles.filter(file => {
-      const isValidType = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type)
-      const isValidSize = file.size <= 5 * 1024 * 1024
-      return isValidType && isValidSize
-    })
-
-    if (validFiles.length < selectedFiles.length) {
-      setToast({ message: 'Beberapa file tidak valid (Maks 5MB, format JPG/PNG)', type: 'warning' })
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: 'Ukuran file maksimal 5MB', type: 'error' })
+      return
     }
 
-    if (validFiles.length === 0) return
-
-    if (section === 'A') {
-      setEvidenceFilesA(prev => ({ ...prev, [qId]: [...prev[qId], ...validFiles] }))
-    } else if (section === 'B') {
-      setEvidenceFilesB(prev => ({ ...prev, [qId]: [...prev[qId], ...validFiles] }))
-    } else {
-      setEvidenceFilesC(prev => ({ ...prev, [qId]: [...prev[qId], ...validFiles] }))
-    }
-  }
-
-  const removeFile = (section: 'A' | 'B' | 'C', qId: string, index: number) => {
-    if (section === 'A') {
-      setEvidenceFilesA(prev => ({ ...prev, [qId]: prev[qId].filter((_, i) => i !== index) }))
-    } else if (section === 'B') {
-      setEvidenceFilesB(prev => ({ ...prev, [qId]: prev[qId].filter((_, i) => i !== index) }))
-    } else {
-      setEvidenceFilesC(prev => ({ ...prev, [qId]: prev[qId].filter((_, i) => i !== index) }))
-    }
-  }
-
-  const uploadFiles = async (section: 'A' | 'B' | 'C', qId: string) => {
-    const files = section === 'A' ? evidenceFilesA[qId] : section === 'B' ? evidenceFilesB[qId] : evidenceFilesC[qId]
-    if (files.length === 0) return []
-
-    const urls: string[] = []
-    const { supabase } = await import('../../lib/supabase')
-
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${candidateId}/${qId}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      
-      const { error: uploadError } = await supabase.storage
-        .from('home_visit_evidence')
-        .upload(fileName, file)
-
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError)
-        continue
+    setter(prev => {
+      if (prev.preview) URL.revokeObjectURL(prev.preview)
+      return {
+        file,
+        preview: URL.createObjectURL(file)
       }
+    })
+  }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('home_visit_evidence')
-        .getPublicUrl(fileName)
-      
-      urls.push(publicUrl)
+  const uploadSingleFile = async (file: File | null, prefix: string) => {
+    if (!file) return null
+    const { supabase } = await import('../../lib/supabase')
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${candidateId}/${prefix}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+    
+    const { error: uploadError } = await supabase.storage
+      .from('home_visit_evidence')
+      .upload(fileName, file)
+
+    if (uploadError) {
+      console.error(`Error uploading ${prefix}:`, uploadError)
+      return null
     }
 
-    return urls
+    const { data: { publicUrl } } = supabase.storage
+      .from('home_visit_evidence')
+      .getPublicUrl(fileName)
+    
+    return publicUrl
   }
 
   const handleNext = () => {
@@ -232,43 +201,69 @@ export default function FormHomeVisit() {
       setIsUploading(true)
       const results = calculateResults()
       
-      // Upload all files and get URLs for Part A
-      const partAWithUrls = await Promise.all(questionsA.map(async (q) => ({
+      // 1. Upload all general photos first
+      const urlVisit = await uploadSingleFile(fotoVisit.file, 'foto_visit')
+      const urlOrtu = await uploadSingleFile(fotoOrtu.file, 'foto_ortu')
+      const urlPeserta = await uploadSingleFile(fotoPeserta.file, 'foto_peserta')
+      
+      const urlDepan = await uploadSingleFile(fotoDepan.file, 'foto_depan')
+      const urlDalam = await uploadSingleFile(fotoDalam.file, 'foto_dalam')
+      const urlBelakang = await uploadSingleFile(fotoBelakang.file, 'foto_belakang')
+
+      // Store URLs for Excel Export
+      const urls: Record<string, string> = {}
+      if (urlVisit) urls.visit = urlVisit
+      if (urlOrtu) urls.ortu = urlOrtu
+      if (urlPeserta) urls.peserta = urlPeserta
+      if (urlDepan) urls.depan = urlDepan
+      if (urlDalam) urls.dalam = urlDalam
+      if (urlBelakang) urls.belakang = urlBelakang
+      setUploadedUrls(urls)
+
+      // 2. Prepare Part A Results
+      const partAResults = questionsA.map((q) => ({
         id: q.id,
         label: q.indicator,
         value: partAAnswers[q.id] || false,
-        note: partANotes[q.id],
-        evidenceUrls: await uploadFiles('A', q.id)
-      })))
+        note: partANotes[q.id]
+      }))
 
-      // Upload all files and get URLs for Part B
-      const partBWithUrls = await Promise.all(questionsB.map(async (q) => ({
+      // Inject General Photos into Part A
+      if (urlVisit) partAResults.push({ id: 'foto_visit', label: 'Foto saat Home Visit', value: true, evidenceUrls: [urlVisit] } as any)
+      if (urlOrtu) partAResults.push({ id: 'foto_ortu', label: 'Foto bersama orang tua peserta', value: true, evidenceUrls: [urlOrtu] } as any)
+      if (urlPeserta) partAResults.push({ id: 'foto_peserta', label: 'Foto bersama peserta', value: true, evidenceUrls: [urlPeserta] } as any)
+
+      // 3. Prepare Part B Results
+      const partBResults = questionsB.map((q) => ({
         id: q.id,
         label: q.indicator,
         aspect: q.aspect,
         score: partBAnswers[q.id] || 0,
-        note: partBNotes[q.id],
-        evidenceUrls: await uploadFiles('B', q.id)
-      })))
+        note: partBNotes[q.id]
+      }))
 
-      // Upload all files and get URLs for Part C
-      const partCWithUrls = await Promise.all(questionsC.map(async (q) => ({
+      // Inject General Photos into Part B
+      if (urlDepan) partBResults.push({ id: 'foto_depan', label: 'Foto Bagian Depan Rumah', aspect: 'Dokumentasi', score: 0, evidenceUrls: [urlDepan] } as any)
+      if (urlDalam) partBResults.push({ id: 'foto_dalam', label: 'Foto Dalam Rumah', aspect: 'Dokumentasi', score: 0, evidenceUrls: [urlDalam] } as any)
+      if (urlBelakang) partBResults.push({ id: 'foto_belakang', label: 'Foto Belakang Rumah', aspect: 'Dokumentasi', score: 0, evidenceUrls: [urlBelakang] } as any)
+
+      // 4. Prepare Part C Results
+      const partCResults = questionsC.map((q) => ({
         id: q.id,
         label: q.indicator,
         aspect: q.aspect,
         score: partCAnswers[q.id] || 0,
-        note: partCNotes[q.id],
-        evidenceUrls: await uploadFiles('C', q.id)
-      })))
+        note: partCNotes[q.id]
+      }))
       
       const payload = {
         candidateId: candidateId || '',
         mentorId: interviewerId || '',
         submittedAt: new Date().toISOString(),
-        partAResults: partAWithUrls,
+        partAResults: partAResults,
         partAPass: results.partAPass,
-        partBResults: partBWithUrls,
-        partCResults: partCWithUrls,
+        partBResults: partBResults,
+        partCResults: partCResults,
         totalScore: results.totalScore,
         percentage: results.percentage,
         recommendationStatus: results.recommendationStatus,
@@ -285,8 +280,9 @@ export default function FormHomeVisit() {
     }
   }
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const results = calculateResults()
+    
     const dataToExport = [
       ['HASIL OBSERVASI HOME VISIT'],
       [],
@@ -297,28 +293,35 @@ export default function FormHomeVisit() {
       ['Mentor/Visitor:', interviewerName],
       ['Tanggal:', new Date().toLocaleDateString('id-ID')],
       [],
-      ['BAGIAN A (WAJIB)', '', 'Catatan', 'Link Bukti Foto'],
+      ['BAGIAN A (WAJIB)', '', 'Catatan'],
       ...questionsA.map(q => [
         q.indicator, 
         partAAnswers[q.id] ? 'Ya' : 'Tidak', 
-        partANotes[q.id] || '-',
-        evidenceFilesA[q.id]?.length > 0 ? `Terdapat ${evidenceFilesA[q.id].length} foto (Lihat di Sistem)` : '-'
+        partANotes[q.id] || '-'
       ]),
       ['Status Bagian A:', results.partAPass ? 'LOLOS' : 'TIDAK LOLOS'],
       [],
-      ['BAGIAN B & C (PENILAIAN)', 'Skor', 'Catatan', 'Link Bukti Foto'],
+      ['DOKUMENTASI FOTO BAGIAN A'],
+      ['Foto saat Home Visit:', uploadedUrls.visit || (fotoVisit.file ? 'Tersedia di Sistem' : '-')],
+      ['Foto bersama Orang Tua:', uploadedUrls.ortu || (fotoOrtu.file ? 'Tersedia di Sistem' : '-')],
+      ['Foto bersama Peserta:', uploadedUrls.peserta || (fotoPeserta.file ? 'Tersedia di Sistem' : '-')],
+      [],
+      ['BAGIAN B & C (PENILAIAN)', 'Skor', 'Catatan'],
       ...questionsB.map(q => [
         q.indicator, 
         partBAnswers[q.id], 
-        partBNotes[q.id] || '-',
-        evidenceFilesB[q.id]?.length > 0 ? `Terdapat ${evidenceFilesB[q.id].length} foto` : '-'
+        partBNotes[q.id] || '-'
       ]),
       ...questionsC.map(q => [
         q.indicator, 
         partCAnswers[q.id], 
-        partCNotes[q.id] || '-',
-        evidenceFilesC[q.id]?.length > 0 ? `Terdapat ${evidenceFilesC[q.id].length} foto` : '-'
+        partCNotes[q.id] || '-'
       ]),
+      [],
+      ['DOKUMENTASI FOTO BAGIAN B'],
+      ['Foto Depan Rumah:', uploadedUrls.depan || (fotoDepan.file ? 'Tersedia di Sistem' : '-')],
+      ['Foto Dalam Rumah:', uploadedUrls.dalam || (fotoDalam.file ? 'Tersedia di Sistem' : '-')],
+      ['Foto Belakang Rumah:', uploadedUrls.belakang || (fotoBelakang.file ? 'Tersedia di Sistem' : '-')],
       [],
       ['Ringkasan Akhir'],
       ['Total Skor:', `${results.totalScore}/40`],
@@ -333,10 +336,51 @@ export default function FormHomeVisit() {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Home Visit')
     
-    ws['!cols'] = [{ wch: 50 }, { wch: 15 }, { wch: 40 }, { wch: 30 }]
+    ws['!cols'] = [{ wch: 50 }, { wch: 15 }, { wch: 40 }]
     
     XLSX.writeFile(wb, `HomeVisit_${candidate.full_name.replace(/\s+/g, '_')}.xlsx`)
   }
+
+  const PhotoUploadBox = ({ 
+    label, 
+    state, 
+    setter, 
+    id 
+  }: { 
+    label: string; 
+    state: PhotoState; 
+    setter: React.Dispatch<React.SetStateAction<PhotoState>>;
+    id: string;
+  }) => (
+    <div className="space-y-2">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+      <div className="relative group">
+        {state.preview ? (
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden border-2 border-blue-100 shadow-inner bg-gray-50">
+            <img src={state.preview} alt="preview" className="w-full h-full object-cover" />
+            <button
+              onClick={() => setter({ file: null, preview: null })}
+              className="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group">
+            <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">📸</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">Klik untuk Foto</span>
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => handlePhotoChange(e.target.files?.[0] || null, setter)}
+            />
+          </label>
+        )}
+      </div>
+    </div>
+  )
 
   const steps = [
     { num: 1, title: 'Wajib', icon: '⚠️' },
@@ -351,8 +395,8 @@ export default function FormHomeVisit() {
       {isUploading && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-          <h2 className="text-xl font-black text-gray-900">Mengunggah Bukti...</h2>
-          <p className="text-sm text-gray-500 mt-2">Mohon tunggu sebentar, data sedang dikirim ke sistem.</p>
+          <h2 className="text-xl font-black text-gray-900">Mengunggah Data & Bukti...</h2>
+          <p className="text-sm text-gray-500 mt-2 text-center px-6">Mohon tunggu sebentar, data sedang dikirim ke sistem.</p>
         </div>
       )}
 
@@ -413,7 +457,8 @@ export default function FormHomeVisit() {
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <h2 className="text-xl font-bold text-gray-900 mb-2">Bagian A: Kualifikasi Wajib</h2>
               <p className="text-sm text-gray-500 mb-6">Alasan khusus wajib dicantumkan jika ada temuan unik.</p>
-              <div className="space-y-6">
+              
+              <div className="space-y-6 mb-12">
                 {questionsA.map((q) => (
                   <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -443,47 +488,25 @@ export default function FormHomeVisit() {
                       placeholder="Tambahkan catatan kualitatif untuk poin ini..."
                       className="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px] bg-white transition-all"
                     />
-
-                    {/* File Upload for Part A */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <label className="cursor-pointer bg-white border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-500 px-4 py-2 rounded-xl flex items-center gap-2 transition-all group">
-                          <span className="text-xl group-hover:scale-110 transition-transform">📸</span>
-                          <span className="text-xs font-bold uppercase tracking-wider">Tambah Bukti Foto ({evidenceFilesA[q.id]?.length || 0}/3)</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) => handleFileChange('A', q.id, e.target.files)}
-                            disabled={evidenceFilesA[q.id]?.length >= 3}
-                          />
-                        </label>
-                        <p className="text-[10px] text-gray-400 font-medium">Maks 5MB per file</p>
-                      </div>
-
-                      {evidenceFilesA[q.id]?.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {evidenceFilesA[q.id].map((file, idx) => (
-                            <div key={idx} className="relative w-20 h-20 group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt="preview"
-                                className="w-full h-full object-cover rounded-lg border border-gray-200"
-                              />
-                              <button
-                                onClick={() => removeFile('A', q.id, idx)}
-                                className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Consolidated Photo Uploads for Part A */}
+              <div className="pt-8 border-t-2 border-dashed border-gray-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-xl">📸</div>
+                  <div>
+                    <h3 className="font-black text-gray-900">Dokumentasi Foto Wajib</h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Harap unggah bukti foto berikut</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <PhotoUploadBox label="Foto saat Home Visit" id="visit" state={fotoVisit} setter={setFotoVisit} />
+                  <PhotoUploadBox label="Foto bersama Ortu" id="ortu" state={fotoOrtu} setter={setFotoOrtu} />
+                  <PhotoUploadBox label="Foto bersama Peserta" id="peserta" state={fotoPeserta} setter={setFotoPeserta} />
+                </div>
               </div>
             </div>
           )}
@@ -492,7 +515,7 @@ export default function FormHomeVisit() {
           {currentStep === 2 && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Bagian B: Latar Belakang Keluarga</h2>
-              <div className="space-y-10">
+              <div className="space-y-10 mb-12">
                 {questionsB.map((q) => (
                   <div key={q.id} className="space-y-4">
                     <p className="text-sm font-black text-gray-800 flex items-center gap-2">
@@ -538,46 +561,25 @@ export default function FormHomeVisit() {
                       placeholder="Berikan alasan mengapa Anda memilih skor ini..."
                       className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px] bg-white transition-all"
                     />
-
-                    {/* File Upload for Part B */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <label className="cursor-pointer bg-white border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-400 px-4 py-2 rounded-xl flex items-center gap-2 transition-all group">
-                          <span className="text-xl group-hover:scale-110 transition-transform">📸</span>
-                          <span className="text-xs font-bold uppercase tracking-wider">Foto Bukti ({evidenceFilesB[q.id]?.length || 0}/3)</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) => handleFileChange('B', q.id, e.target.files)}
-                            disabled={evidenceFilesB[q.id]?.length >= 3}
-                          />
-                        </label>
-                      </div>
-
-                      {evidenceFilesB[q.id]?.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {evidenceFilesB[q.id].map((file, idx) => (
-                            <div key={idx} className="relative w-16 h-16 group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt="preview"
-                                className="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm"
-                              />
-                              <button
-                                onClick={() => removeFile('B', q.id, idx)}
-                                className="absolute -top-1.5 -right-1.5 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Consolidated Photo Uploads for Part B */}
+              <div className="pt-8 border-t-2 border-dashed border-gray-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl">🏠</div>
+                  <div>
+                    <h3 className="font-black text-gray-900">Foto Kondisi Rumah</h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Harap unggah foto bagian rumah</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <PhotoUploadBox label="Foto Depan Rumah" id="depan" state={fotoDepan} setter={setFotoDepan} />
+                  <PhotoUploadBox label="Foto Dalam Rumah" id="dalam" state={fotoDalam} setter={setFotoDalam} />
+                  <PhotoUploadBox label="Foto Belakang Rumah" id="belakang" state={fotoBelakang} setter={setFotoBelakang} />
+                </div>
               </div>
             </div>
           )}
@@ -632,44 +634,6 @@ export default function FormHomeVisit() {
                       placeholder="Tambahkan detail observasi untuk poin ini..."
                       className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px] bg-white transition-all"
                     />
-
-                    {/* File Upload for Part C */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <label className="cursor-pointer bg-white border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 text-gray-500 px-4 py-2 rounded-xl flex items-center gap-2 transition-all group">
-                          <span className="text-xl group-hover:scale-110 transition-transform">📸</span>
-                          <span className="text-xs font-bold uppercase tracking-wider">Foto Bukti ({evidenceFilesC[q.id]?.length || 0}/3)</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) => handleFileChange('C', q.id, e.target.files)}
-                            disabled={evidenceFilesC[q.id]?.length >= 3}
-                          />
-                        </label>
-                      </div>
-
-                      {evidenceFilesC[q.id]?.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {evidenceFilesC[q.id].map((file, idx) => (
-                            <div key={idx} className="relative w-16 h-16 group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt="preview"
-                                className="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm"
-                              />
-                              <button
-                                onClick={() => removeFile('C', q.id, idx)}
-                                className="absolute -top-1.5 -right-1.5 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -698,49 +662,54 @@ export default function FormHomeVisit() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-gray-900 border-l-4 border-blue-600 pl-3">Tinjauan Catatan & Bukti Foto</h3>
+                <div className="space-y-6">
+                  <h3 className="text-sm font-bold text-gray-900 border-l-4 border-blue-600 pl-3">Tinjauan Dokumentasi Foto</h3>
+                  
+                  {/* Part A Photos Review */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[fotoVisit, fotoOrtu, fotoPeserta].map((photo, i) => photo.preview && (
+                      <div key={i} className="space-y-1">
+                        <img src={photo.preview} className="w-full aspect-video object-cover rounded-lg border border-gray-200" alt="ev" />
+                        <p className="text-[8px] text-center font-bold text-gray-400 uppercase">
+                          {i === 0 ? 'Home Visit' : i === 1 ? 'Ortu' : 'Peserta'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Part B Photos Review */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[fotoDepan, fotoDalam, fotoBelakang].map((photo, i) => photo.preview && (
+                      <div key={i} className="space-y-1">
+                        <img src={photo.preview} className="w-full aspect-video object-cover rounded-lg border border-gray-200" alt="ev" />
+                        <p className="text-[8px] text-center font-bold text-gray-400 uppercase">
+                          {i === 0 ? 'Depan' : i === 1 ? 'Dalam' : 'Belakang'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <h3 className="text-sm font-bold text-gray-900 border-l-4 border-blue-600 pl-3 pt-4">Tinjauan Catatan Kualitatif</h3>
                   <div className="grid grid-cols-1 gap-4">
                     {/* Section A Review */}
-                    {questionsA.map(q => (partANotes[q.id] || evidenceFilesA[q.id]?.length > 0) && (
-                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                        <p className="text-xs font-bold text-gray-700">{q.indicator}</p>
-                        {partANotes[q.id] && <p className="text-xs text-gray-600 italic">"{partANotes[q.id]}"</p>}
-                        {evidenceFilesA[q.id]?.length > 0 && (
-                          <div className="flex gap-2">
-                            {evidenceFilesA[q.id].map((file, i) => (
-                              <img key={i} src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-lg border border-gray-200" alt="ev" />
-                            ))}
-                          </div>
-                        )}
+                    {questionsA.map(q => partANotes[q.id] && (
+                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.indicator}</p>
+                        <p className="text-xs text-gray-600 italic">"{partANotes[q.id]}"</p>
                       </div>
                     ))}
                     {/* Section B Review */}
-                    {questionsB.map(q => (partBNotes[q.id] || evidenceFilesB[q.id]?.length > 0) && (
-                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                        <p className="text-xs font-bold text-gray-700">{q.indicator}</p>
-                        {partBNotes[q.id] && <p className="text-xs text-gray-600 italic">"{partBNotes[q.id]}"</p>}
-                        {evidenceFilesB[q.id]?.length > 0 && (
-                          <div className="flex gap-2">
-                            {evidenceFilesB[q.id].map((file, i) => (
-                              <img key={i} src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-lg border border-gray-200" alt="ev" />
-                            ))}
-                          </div>
-                        )}
+                    {questionsB.map(q => partBNotes[q.id] && (
+                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.indicator}</p>
+                        <p className="text-xs text-gray-600 italic">"{partBNotes[q.id]}"</p>
                       </div>
                     ))}
                     {/* Section C Review */}
-                    {questionsC.map(q => (partCNotes[q.id] || evidenceFilesC[q.id]?.length > 0) && (
-                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                        <p className="text-xs font-bold text-gray-700">{q.indicator}</p>
-                        {partCNotes[q.id] && <p className="text-xs text-gray-600 italic">"{partCNotes[q.id]}"</p>}
-                        {evidenceFilesC[q.id]?.length > 0 && (
-                          <div className="flex gap-2">
-                            {evidenceFilesC[q.id].map((file, i) => (
-                              <img key={i} src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-lg border border-gray-200" alt="ev" />
-                            ))}
-                          </div>
-                        )}
+                    {questionsC.map(q => partCNotes[q.id] && (
+                      <div key={q.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.indicator}</p>
+                        <p className="text-xs text-gray-600 italic">"{partCNotes[q.id]}"</p>
                       </div>
                     ))}
                   </div>
