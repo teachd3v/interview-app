@@ -47,7 +47,8 @@ export default function HasilAkhir() {
   )
     .map(([candidateId, candResults]: [string, any]) => {
       const candidate = candidates.find((c) => c.id === candidateId)
-      const passAll = candResults.length === 3 && candResults.every((r: any) => r.partAPass)
+      const requiredResults = candidate?.region === 'PIDIE JAYA' ? 2 : 3
+      const passAll = candResults.length === requiredResults && candResults.every((r: any) => r.partAPass)
       const avgScore = candResults.reduce((sum: number, r: any) => sum + r.partBPercentage, 0) / candResults.length
 
       return {
@@ -61,7 +62,7 @@ export default function HasilAkhir() {
       }
     })
     .filter((item) => {
-      // Filter hanya yang lulus semua (3 interviewer)
+      // Filter hanya yang sudah selesai (2 atau 3 interviewer tergantung wilayah)
       if (!item.passAll) return false
       // Filter berdasarkan region
       if (filterRegion !== 'all' && item.region !== filterRegion) return false
@@ -99,7 +100,8 @@ export default function HasilAkhir() {
   // Group results by candidate for stats - Simplified to use candidates directly for better counts
   const candidateSummaries = candidates.map((candidate) => {
     const candResults = results.filter(r => r.candidateId === candidate.id)
-    const isSelesai = candResults.length === 3
+    const requiredResults = candidate.region === 'PIDIE JAYA' ? 2 : 3
+    const isSelesai = candResults.length === requiredResults
     const passAll = isSelesai && candResults.every((r: any) => r.partAPass)
     const failAny = isSelesai && candResults.some((r: any) => !r.partAPass)
     const avgScore = candResults.length > 0 

@@ -105,9 +105,11 @@ export default function InterviewerDashboard() {
           // Harus di wilayah mentor
           if (c.region !== mentorRegion) return false
           
-          // Harus sudah diinterview 3 kali
+          // Harus sudah diinterview 3 kali (atau 2x untuk Pidie Jaya)
           const candResults = results.filter(r => r.candidateId === c.id)
-          if (candResults.length !== 3) return false
+          const requiredResults = c.region === 'PIDIE JAYA' ? 2 : 3
+          
+          if (candResults.length !== requiredResults) return false
           
           // Harus lulus semua (Part A)
           const passAll = candResults.every(r => r.partAPass)
@@ -117,7 +119,7 @@ export default function InterviewerDashboard() {
           return c.home_visit_status === 'lolos'
         })
         .map(c => {
-          // Hitung rata-rata persentase Part B dari 3 interviewer
+          // Hitung rata-rata persentase Part B dari semua interviewer
           const candResults = results.filter(r => r.candidateId === c.id)
           const avgScore = candResults.reduce((sum, r) => sum + r.partBPercentage, 0) / candResults.length
           return { candidate: c, avgScore }

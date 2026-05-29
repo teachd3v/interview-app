@@ -23,10 +23,12 @@ export default function ValidasiHomeVisit() {
     useRegionStore.getState().loadFromSupabase()
   }, [])
 
-  // Filter kandidat yang sudah 3x interview dan lulus Part A
+  // Filter kandidat yang sudah 3x interview (atau 2x untuk Pidie Jaya) dan lulus Part A
   const eligibleCandidates = candidates.filter(c => {
     const candResults = results.filter(r => r.candidateId === c.id)
-    if (candResults.length !== 3) return false
+    const requiredResults = c.region === 'PIDIE JAYA' ? 2 : 3
+    
+    if (candResults.length !== requiredResults) return false
     const passInitial = candResults.every(r => r.partAPass)
     if (!passInitial) return false
     
