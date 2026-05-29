@@ -387,12 +387,12 @@ export default function InterviewerDashboard() {
 
                       <div className="pt-4 border-t border-gray-100">
                         {visitResult ? (
-                          <button
-                            disabled
-                            className="w-full bg-gray-100 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
+                          <Link
+                            to={`/interviewer/home-visit/${candidate.id}`}
+                            className="block w-full text-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                           >
-                            ✓ Sudah Diobservasi
-                          </button>
+                            Edit Observasi
+                          </Link>
                         ) : (
                           <Link
                             to={`/interviewer/home-visit/${candidate.id}`}

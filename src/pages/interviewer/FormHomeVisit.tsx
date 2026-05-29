@@ -49,6 +49,9 @@ export default function FormHomeVisit() {
   useEffect(() => {
     useCandidateStore.getState().loadFromSupabase()
     
+    // Check for existing results to pre-populate (Edit Mode)
+    const existingResult = useHomeVisitStore.getState().results.find(r => r.candidateId === candidateId)
+    
     // Initialize answers and notes
     const initialA: Record<string, boolean | null> = {}
     const initialB: Record<string, number | null> = {}
@@ -59,16 +62,19 @@ export default function FormHomeVisit() {
     
     homeVisitInstrument.forEach(q => {
       if (q.section === 'A') {
-        initialA[q.id] = null
-        initialANotes[q.id] = ''
+        const existing = existingResult?.partAResults.find(r => r.id === q.id)
+        initialA[q.id] = existing ? existing.value : null
+        initialANotes[q.id] = existing?.note || ''
       }
       else if (q.section === 'B') {
-        initialB[q.id] = null
-        initialBNotes[q.id] = ''
+        const existing = existingResult?.partBResults.find(r => r.id === q.id)
+        initialB[q.id] = existing ? existing.score : null
+        initialBNotes[q.id] = existing?.note || ''
       }
       else if (q.section === 'C') {
-        initialC[q.id] = null
-        initialCNotes[q.id] = ''
+        const existing = existingResult?.partCResults.find(r => r.id === q.id)
+        initialC[q.id] = existing ? existing.score : null
+        initialCNotes[q.id] = existing?.note || ''
       }
     })
     
@@ -78,7 +84,38 @@ export default function FormHomeVisit() {
     setPartANotes(initialANotes)
     setPartBNotes(initialBNotes)
     setPartCNotes(initialCNotes)
-  }, [])
+
+    if (existingResult) {
+      setGeneralNotes(existingResult.notes || '')
+      
+      // Load existing photos into preview
+      const getUrl = (results: any[], id: string) => results.find(r => r.id === id)?.evidenceUrls?.[0]
+      
+      const urlVisit = getUrl(existingResult.partAResults, 'foto_visit')
+      const urlOrtu = getUrl(existingResult.partAResults, 'foto_ortu')
+      const urlPeserta = getUrl(existingResult.partAResults, 'foto_peserta')
+      
+      const urlDepan = getUrl(existingResult.partBResults, 'foto_depan')
+      const urlDalam = getUrl(existingResult.partBResults, 'foto_dalam')
+      const urlBelakang = getUrl(existingResult.partBResults, 'foto_belakang')
+
+      if (urlVisit) setFotoVisit({ file: null, preview: urlVisit })
+      if (urlOrtu) setFotoOrtu({ file: null, preview: urlOrtu })
+      if (urlPeserta) setFotoPeserta({ file: null, preview: urlPeserta })
+      if (urlDepan) setFotoDepan({ file: null, preview: urlDepan })
+      if (urlDalam) setFotoDalam({ file: null, preview: urlDalam })
+      if (urlBelakang) setFotoBelakang({ file: null, preview: urlBelakang })
+      
+      setUploadedUrls({
+        visit: urlVisit || '',
+        ortu: urlOrtu || '',
+        peserta: urlPeserta || '',
+        depan: urlDepan || '',
+        dalam: urlDalam || '',
+        belakang: urlBelakang || ''
+      })
+    }
+  }, [candidateId])
 
   const candidate = candidates.find((c) => c.id === candidateId)
 
@@ -201,24 +238,25 @@ export default function FormHomeVisit() {
       setIsUploading(true)
       const results = calculateResults()
       
-      // 1. Upload all general photos first
-      const urlVisit = await uploadSingleFile(fotoVisit.file, 'foto_visit')
-      const urlOrtu = await uploadSingleFile(fotoOrtu.file, 'foto_ortu')
-      const urlPeserta = await uploadSingleFile(fotoPeserta.file, 'foto_peserta')
+      // 1. Upload new photos or reuse existing URLs
+      const urlVisit = fotoVisit.file ? await uploadSingleFile(fotoVisit.file, 'foto_visit') : uploadedUrls.visit
+      const urlOrtu = fotoOrtu.file ? await uploadSingleFile(fotoOrtu.file, 'foto_ortu') : uploadedUrls.ortu
+      const urlPeserta = fotoPeserta.file ? await uploadSingleFile(fotoPeserta.file, 'foto_peserta') : uploadedUrls.peserta
       
-      const urlDepan = await uploadSingleFile(fotoDepan.file, 'foto_depan')
-      const urlDalam = await uploadSingleFile(fotoDalam.file, 'foto_dalam')
-      const urlBelakang = await uploadSingleFile(fotoBelakang.file, 'foto_belakang')
+      const urlDepan = fotoDepan.file ? await uploadSingleFile(fotoDepan.file, 'foto_depan') : uploadedUrls.depan
+      const urlDalam = fotoDalam.file ? await uploadSingleFile(fotoDalam.file, 'foto_dalam') : uploadedUrls.dalam
+      const urlBelakang = fotoBelakang.file ? await uploadSingleFile(fotoBelakang.file, 'foto_belakang') : uploadedUrls.belakang
 
-      // Store URLs for Excel Export
-      const urls: Record<string, string> = {}
-      if (urlVisit) urls.visit = urlVisit
-      if (urlOrtu) urls.ortu = urlOrtu
-      if (urlPeserta) urls.peserta = urlPeserta
-      if (urlDepan) urls.depan = urlDepan
-      if (urlDalam) urls.dalam = urlDalam
-      if (urlBelakang) urls.belakang = urlBelakang
-      setUploadedUrls(urls)
+      // Update local storage for Excel Export
+      const finalUrls = {
+        visit: urlVisit || '',
+        ortu: urlOrtu || '',
+        peserta: urlPeserta || '',
+        depan: urlDepan || '',
+        dalam: urlDalam || '',
+        belakang: urlBelakang || ''
+      }
+      setUploadedUrls(finalUrls)
 
       // 2. Prepare Part A Results
       const partAResults = questionsA.map((q) => ({
