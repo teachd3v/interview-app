@@ -344,13 +344,11 @@ export default function FormHomeVisit() {
   const PhotoUploadBox = ({ 
     label, 
     state, 
-    setter, 
-    id 
+    setter
   }: { 
     label: string; 
     state: PhotoState; 
     setter: React.Dispatch<React.SetStateAction<PhotoState>>;
-    id: string;
   }) => (
     <div className="space-y-2">
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
@@ -503,9 +501,9 @@ export default function FormHomeVisit() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <PhotoUploadBox label="Foto saat Home Visit" id="visit" state={fotoVisit} setter={setFotoVisit} />
-                  <PhotoUploadBox label="Foto bersama Ortu" id="ortu" state={fotoOrtu} setter={setFotoOrtu} />
-                  <PhotoUploadBox label="Foto bersama Peserta" id="peserta" state={fotoPeserta} setter={setFotoPeserta} />
+                  <PhotoUploadBox label="Foto saat Home Visit" state={fotoVisit} setter={setFotoVisit} />
+                  <PhotoUploadBox label="Foto bersama Ortu" state={fotoOrtu} setter={setFotoOrtu} />
+                  <PhotoUploadBox label="Foto bersama Peserta" state={fotoPeserta} setter={setFotoPeserta} />
                 </div>
               </div>
             </div>
@@ -576,9 +574,9 @@ export default function FormHomeVisit() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <PhotoUploadBox label="Foto Depan Rumah" id="depan" state={fotoDepan} setter={setFotoDepan} />
-                  <PhotoUploadBox label="Foto Dalam Rumah" id="dalam" state={fotoDalam} setter={setFotoDalam} />
-                  <PhotoUploadBox label="Foto Belakang Rumah" id="belakang" state={fotoBelakang} setter={setFotoBelakang} />
+                  <PhotoUploadBox label="Foto Depan Rumah" state={fotoDepan} setter={setFotoDepan} />
+                  <PhotoUploadBox label="Foto Dalam Rumah" state={fotoDalam} setter={setFotoDalam} />
+                  <PhotoUploadBox label="Foto Belakang Rumah" state={fotoBelakang} setter={setFotoBelakang} />
                 </div>
               </div>
             </div>
