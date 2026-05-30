@@ -402,17 +402,35 @@ export default function FormHomeVisit() {
             </button>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group">
-            <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">📸</span>
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Klik untuk Foto</span>
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => handlePhotoChange(e.target.files?.[0] || null, setter)}
-            />
-          </label>
+          <div className="flex flex-col items-center justify-center w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-4 transition-all">
+            <span className="text-3xl mb-2">📸</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase mb-3 text-center">Pilih Metode Unggah</span>
+            
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <label className="flex flex-col items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all active:scale-95">
+                <span className="text-xl">📷</span>
+                <span className="text-[9px] font-black text-blue-600 uppercase mt-1">Kamera</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handlePhotoChange(e.target.files?.[0] || null, setter)}
+                />
+              </label>
+              
+              <label className="flex flex-col items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all active:scale-95">
+                <span className="text-xl">📂</span>
+                <span className="text-[9px] font-black text-gray-600 uppercase mt-1">Galeri</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => handlePhotoChange(e.target.files?.[0] || null, setter)}
+                />
+              </label>
+            </div>
+          </div>
         )}
       </div>
     </div>

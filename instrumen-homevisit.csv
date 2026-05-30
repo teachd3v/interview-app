@@ -1,4 +1,4 @@
-ID,Bagian,Aspek,Indikator,Tipe,Skor_4,Skor_3,Skor_2,Skor_1,Keterangan
+ID,Bagian,Aspek,Indikator,Tipe,Skor_1,Skor_2,Skor_3,Skor_4,Keterangan
 a1,A,Wajib,Orangtua/Ibu/Wali bersedia mendukung calon PM dalam aktivitas program YES dari awal sampai akhir,Ya/Tidak,,,,,"Jika terdapat jawaban tidak, walau hanya satu dari tiga indikator di atas maka dinyatakan Tidak Lolos.									"
 a2,A,Wajib,Orangtua/Ibu/Wali bersedia bersinergi dengan YES dalam memantau perkembangan calon PM,Ya/Tidak,,,,,"Jika terdapat jawaban tidak, walau hanya satu dari tiga indikator di atas maka dinyatakan Tidak Lolos.									"
 a3,A,Wajib,Orangtua/Ibu/Wali bersedia mendukung calon PM untuk melanjutkan pendidikan ke perguruan tinggi,Ya/Tidak,,,,,"Jika terdapat jawaban tidak, walau hanya satu dari tiga indikator di atas maka dinyatakan Tidak Lolos.									"

@@ -100,11 +100,33 @@ export const useHomeVisitStore = create<HomeVisitStore>((set, get) => ({
         notes: result.notes,
       }
 
-      // Gunakan upsert dengan onConflict candidate_id untuk update jika sudah ada
-      const { data, error } = await supabase
+      // 1. Cek ketersediaan data secara manual
+      const { data: existingData } = await supabase
         .from('home_visit_results')
-        .upsert([dbPayload], { onConflict: 'candidate_id' })
-        .select()
+        .select('id')
+        .eq('candidate_id', result.candidateId)
+        .maybeSingle()
+
+      let data, error;
+
+      if (existingData) {
+        // 2a. Jika sudah ada, lakukan UPDATE
+        const { data: updateData, error: updateError } = await supabase
+          .from('home_visit_results')
+          .update(dbPayload)
+          .eq('candidate_id', result.candidateId)
+          .select()
+        data = updateData;
+        error = updateError;
+      } else {
+        // 2b. Jika belum ada, lakukan INSERT
+        const { data: insertData, error: insertError } = await supabase
+          .from('home_visit_results')
+          .insert([dbPayload])
+          .select()
+        data = insertData;
+        error = insertError;
+      }
 
       if (error) {
         console.error('Error adding/updating home visit result:', error)
