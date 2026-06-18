@@ -327,6 +327,7 @@ export default function FormHomeVisit() {
       ['Informasi Kandidat'],
       ['Nama:', candidate.full_name],
       ['ID Kandidat:', candidate.id],
+      ['Email:', candidate.email],
       ['Wilayah:', candidate.region],
       ['Mentor/Visitor:', interviewerName],
       ['Tanggal:', new Date().toLocaleDateString('id-ID')],

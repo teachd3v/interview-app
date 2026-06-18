@@ -35,6 +35,10 @@ export default function HasilHomeVisit() {
     return candidates.find((c) => c.id === id)?.region || '-'
   }
 
+  const getCandidateEmail = (id: string) => {
+    return candidates.find((c) => c.id === id)?.email || '-'
+  }
+
   const getInterviewerName = (id: string) => {
     return interviewers.find((i) => i.id === id)?.full_name || `Mentor ${id}`
   }
@@ -74,9 +78,10 @@ export default function HasilHomeVisit() {
       [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
       [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
       [],
-      ['Nama Kandidat', 'Sekolah', 'Wilayah', 'Mentor (Visitor)', 'Status Rekomendasi', 'Skor (%)', 'Tanggal'],
+      ['Nama Kandidat', 'Email', 'Sekolah', 'Wilayah', 'Mentor (Visitor)', 'Status Rekomendasi', 'Skor (%)', 'Tanggal'],
       ...filteredResults.map((r) => [
         getCandidateName(r.candidateId),
+        getCandidateEmail(r.candidateId),
         getCandidateSchool(r.candidateId),
         getCandidateRegion(r.candidateId),
         getInterviewerName(r.mentorId),
@@ -89,7 +94,16 @@ export default function HasilHomeVisit() {
     const ws = XLSX.utils.aoa_to_sheet(dataToExport)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Hasil Home Visit')
-    ws['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 20 }]
+    ws['!cols'] = [
+      { wch: 30 }, // Nama Kandidat
+      { wch: 30 }, // Email
+      { wch: 25 }, // Sekolah
+      { wch: 20 }, // Wilayah
+      { wch: 25 }, // Mentor (Visitor)
+      { wch: 20 }, // Status Rekomendasi
+      { wch: 15 }, // Skor (%)
+      { wch: 20 }  // Tanggal
+    ]
     XLSX.writeFile(wb, `Hasil_Home_Visit_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
