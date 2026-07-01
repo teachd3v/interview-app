@@ -4,7 +4,7 @@ import { useInterviewerStore, Interviewer } from '../../store/interviewerStore'
 import { parseInterviewerExcelFile, downloadInterviewerTemplate } from '../../utils/excelParser'
 
 export default function DataInterviewer() {
-  const [filterRole, setFilterRole] = useState<'pusat' | 'cabang' | 'mentor' | ''>('')
+  const [filterRole, setFilterRole] = useState<'pusat' | 'mitra' | 'fasil' | ''>('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -110,7 +110,7 @@ export default function DataInterviewer() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Kolom: ID, Nama, Role (pusat/cabang/mentor), Region, Email
+                Kolom: ID, Nama, Role (pusat/mitra/fasil)
               </p>
             </div>
 
@@ -133,13 +133,13 @@ export default function DataInterviewer() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Filter Role</label>
             <select
               value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value as 'pusat' | 'cabang' | 'mentor' | '')}
+              onChange={(e) => setFilterRole(e.target.value as 'pusat' | 'mitra' | 'fasil' | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Semua Role</option>
               <option value="pusat">Pusat</option>
-              <option value="cabang">Cabang</option>
-              <option value="mentor">Mentor</option>
+              <option value="mitra">Mitra</option>
+              <option value="fasil">Fasil</option>
             </select>
           </div>
 
@@ -167,8 +167,6 @@ export default function DataInterviewer() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nama</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Role</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Region</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Aksi</th>
                 </tr>
               </thead>
@@ -184,7 +182,7 @@ export default function DataInterviewer() {
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           interviewer.role === 'pusat'
                             ? 'bg-blue-100 text-blue-800'
-                            : interviewer.role === 'cabang'
+                            : interviewer.role === 'mitra'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-purple-100 text-purple-800'
                         }`}
@@ -192,8 +190,6 @@ export default function DataInterviewer() {
                         {interviewer.role.charAt(0).toUpperCase() + interviewer.role.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{interviewer.region}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{interviewer.email}</td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex gap-2 justify-center">
                         <button
@@ -252,22 +248,14 @@ interface InterviewerFormModalProps {
 function InterviewerFormModal({ interviewer, onClose, onSave }: InterviewerFormModalProps) {
   const [id, setId] = useState(interviewer?.id || '')
   const [fullName, setFullName] = useState(interviewer?.full_name || '')
-  const [role, setRole] = useState<'pusat' | 'cabang' | 'mentor'>(interviewer?.role || 'pusat')
-  const [region, setRegion] = useState(interviewer?.region || '')
-  const [email, setEmail] = useState(interviewer?.email || '')
+  const [role, setRole] = useState<'pusat' | 'mitra' | 'fasil'>(interviewer?.role || 'pusat')
   const [error, setError] = useState('')
 
   const handleSubmit = () => {
     setError('')
 
-    if (!id || !fullName || !role || !region || !email) {
+    if (!id || !fullName || !role) {
       setError('Harap lengkapi semua field')
-      return
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setError('Format email tidak valid')
       return
     }
 
@@ -275,8 +263,6 @@ function InterviewerFormModal({ interviewer, onClose, onSave }: InterviewerFormM
       id,
       full_name: fullName,
       role,
-      region,
-      email,
     } as Interviewer)
   }
 
@@ -329,35 +315,13 @@ function InterviewerFormModal({ interviewer, onClose, onSave }: InterviewerFormM
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as 'pusat' | 'cabang' | 'mentor')}
+              onChange={(e) => setRole(e.target.value as 'pusat' | 'mitra' | 'fasil')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="pusat">Pusat</option>
-              <option value="cabang">Cabang</option>
-              <option value="mentor">Mentor</option>
+              <option value="mitra">Mitra</option>
+              <option value="fasil">Fasil</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Region/Wilayah</label>
-            <input
-              type="text"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="DKI Jakarta"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="email@example.com"
-            />
           </div>
         </div>
 

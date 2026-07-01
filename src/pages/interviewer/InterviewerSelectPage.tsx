@@ -5,14 +5,14 @@ import { useInterviewerStore } from '../../store/interviewerStore'
 
 const roleEmojis: { [key: string]: string } = {
   pusat: '🏛️',
-  cabang: '🏢',
-  mentor: '👨‍🏫',
+  mitra: '🤝',
+  fasil: '📋',
 }
 
 const roleLabels: { [key: string]: string } = {
   pusat: 'Pusat',
-  cabang: 'Cabang',
-  mentor: 'Mentor',
+  mitra: 'Mitra',
+  fasil: 'Fasil',
 }
 
 export default function InterviewerSelectPage() {
@@ -93,11 +93,8 @@ export default function InterviewerSelectPage() {
               >
                 <div className="text-4xl mb-4">{roleEmojis[interviewer.role]}</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{interviewer.full_name}</h3>
-                <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium">Email:</span> {interviewer.email}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Region:</span> {interviewer.region}
+                <p className="text-sm text-gray-500 mb-1">
+                  ID: {interviewer.id}
                 </p>
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">

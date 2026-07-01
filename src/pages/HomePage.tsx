@@ -12,7 +12,7 @@ export default function HomePage() {
   const [adminPassword, setAdminPassword] = useState('')
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
-  const handleSelectRole = (selectedRole: 'admin' | 'pusat' | 'cabang' | 'mentor') => {
+  const handleSelectRole = (selectedRole: 'admin' | 'pusat' | 'mitra' | 'fasil') => {
     // Jika admin, tampilkan password modal dulu
     if (selectedRole === 'admin') {
       setShowPasswordModal(true)
@@ -82,25 +82,25 @@ export default function HomePage() {
             </p>
           </button>
 
-          {/* Cabang Card */}
+          {/* Mitra Card */}
           <button
-            onClick={() => handleSelectRole('cabang')}
+            onClick={() => handleSelectRole('mitra')}
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl hover:scale-105 transition-all text-center"
           >
-            <div className="text-5xl mb-4">🏢</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Cabang</h2>
+            <div className="text-5xl mb-4">🤝</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Mitra</h2>
             <p className="text-gray-600 text-sm">
               Lakukan penilaian wawancara untuk kandidat
             </p>
           </button>
 
-          {/* Mentor Card */}
+          {/* Fasil Card */}
           <button
-            onClick={() => handleSelectRole('mentor')}
+            onClick={() => handleSelectRole('fasil')}
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl hover:scale-105 transition-all text-center"
           >
-            <div className="text-5xl mb-4">👨‍🏫</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Mentor</h2>
+            <div className="text-5xl mb-4">📋</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Fasil</h2>
             <p className="text-gray-600 text-sm">
               Lakukan penilaian wawancara untuk kandidat
             </p>

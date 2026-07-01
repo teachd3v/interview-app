@@ -44,7 +44,7 @@ export default function App() {
         )}
 
         {/* Interviewer Routes */}
-        {(role === 'pusat' || role === 'cabang' || role === 'mentor') && (
+        {(role === 'pusat' || role === 'mitra' || role === 'fasil') && (
           <>
             <Route path="/interviewer/select" element={<InterviewerSelectPage />} />
             <Route path="/interviewer" element={<InterviewerDashboard />} />

@@ -4,14 +4,21 @@ import { Instrument } from './instrumentStore'
 interface PartAIndicator {
   id: string
   label: string
-  value: boolean | null
+  aspect?: string
+  bagian?: string
+  pertanyaan?: string
+  pilihan?: string
+  value: any
 }
 
 interface PartBIndicator {
   id: string
   label: string
   aspect: string
-  value: 'yes' | 'maybe' | 'no' | null
+  pertanyaan?: string
+  pilihan?: string
+  value: string | null
+  bagian: string
 }
 
 interface FormState {
@@ -20,8 +27,8 @@ interface FormState {
   partB: PartBIndicator[]
   notes: string
   setCandidate: (id: string) => void
-  updatePartA: (id: string, value: boolean) => void
-  updatePartB: (id: string, value: 'yes' | 'maybe' | 'no') => void
+  updatePartA: (id: string, value: any) => void
+  updatePartB: (id: string) => void
   setNotes: (notes: string) => void
   reset: () => void
   isPartBComplete: () => boolean
@@ -40,26 +47,26 @@ const defaultPartA: PartAIndicator[] = [
 ]
 
 const defaultPartB: PartBIndicator[] = [
-  { id: 'b1', label: 'Alasan memilih program studi jelas', aspect: 'Akademik', value: null },
-  { id: 'b2', label: 'Target karir terukur', aspect: 'Akademik', value: null },
-  { id: 'b3', label: 'Prestasi akademik konsisten', aspect: 'Akademik', value: null },
-  { id: 'b4', label: 'Pengalaman organisasi/kepemimpinan', aspect: 'Akademik', value: null },
-  { id: 'b5', label: 'Motivasi belajar tinggi', aspect: 'Akademik', value: null },
-  { id: 'b6', label: 'Penguasaan bahasa Inggris baik', aspect: 'Bahasa', value: null },
-  { id: 'b7', label: 'Kemampuan komunikasi efektif', aspect: 'Bahasa', value: null },
-  { id: 'b8', label: 'Pemahaman peran LPDP jelas', aspect: 'LPDP', value: null },
-  { id: 'b9', label: 'Komitmen mengabdi kepada Indonesia', aspect: 'LPDP', value: null },
-  { id: 'b10', label: 'Integritas dan kejujuran tinggi', aspect: 'Kepribadian', value: null },
-  { id: 'b11', label: 'Kemampuan beradaptasi baik', aspect: 'Kepribadian', value: null },
-  { id: 'b12', label: 'Kematangan emosional terjaga', aspect: 'Kepribadian', value: null },
-  { id: 'b13', label: 'Keluarga mendukung penuh', aspect: 'Keluarga', value: null },
-  { id: 'b14', label: 'Situasi finansial keluarga jelas', aspect: 'Keluarga', value: null },
-  { id: 'b15', label: 'Latar belakang keluarga stabil', aspect: 'Keluarga', value: null },
-  { id: 'b16', label: 'Asal domisili sesuai preferensi', aspect: 'Domisili', value: null },
-  { id: 'b17', label: 'Jaringan lokal/networking positif', aspect: 'Domisili', value: null },
-  { id: 'b18', label: 'Pengalaman kerja relevan', aspect: 'Pengalaman', value: null },
-  { id: 'b19', label: 'Keterampilan praktis yang dimiliki', aspect: 'Pengalaman', value: null },
-  { id: 'b20', label: 'Potensi pengembangan diri tinggi', aspect: 'Potensi', value: null },
+  { id: 'b1', label: 'Alasan memilih program studi jelas', aspect: 'Akademik', value: null, bagian: '' },
+  { id: 'b2', label: 'Target karir terukur', aspect: 'Akademik', value: null, bagian: '' },
+  { id: 'b3', label: 'Prestasi akademik konsisten', aspect: 'Akademik', value: null, bagian: '' },
+  { id: 'b4', label: 'Pengalaman organisasi/kepemimpinan', aspect: 'Akademik', value: null, bagian: '' },
+  { id: 'b5', label: 'Motivasi belajar tinggi', aspect: 'Akademik', value: null, bagian: '' },
+  { id: 'b6', label: 'Penguasaan bahasa Inggris baik', aspect: 'Bahasa', value: null, bagian: '' },
+  { id: 'b7', label: 'Kemampuan komunikasi efektif', aspect: 'Bahasa', value: null, bagian: '' },
+  { id: 'b8', label: 'Pemahaman peran LPDP jelas', aspect: 'LPDP', value: null, bagian: '' },
+  { id: 'b9', label: 'Komitmen mengabdi kepada Indonesia', aspect: 'LPDP', value: null, bagian: '' },
+  { id: 'b10', label: 'Integritas dan kejujuran tinggi', aspect: 'Kepribadian', value: null, bagian: '' },
+  { id: 'b11', label: 'Kemampuan beradaptasi baik', aspect: 'Kepribadian', value: null, bagian: '' },
+  { id: 'b12', label: 'Kematangan emosional terjaga', aspect: 'Kepribadian', value: null, bagian: '' },
+  { id: 'b13', label: 'Keluarga mendukung penuh', aspect: 'Keluarga', value: null, bagian: '' },
+  { id: 'b14', label: 'Situasi finansial keluarga jelas', aspect: 'Keluarga', value: null, bagian: '' },
+  { id: 'b15', label: 'Latar belakang keluarga stabil', aspect: 'Keluarga', value: null, bagian: '' },
+  { id: 'b16', label: 'Asal domisili sesuai preferensi', aspect: 'Domisili', value: null, bagian: '' },
+  { id: 'b17', label: 'Jaringan lokal/networking positif', aspect: 'Domisili', value: null, bagian: '' },
+  { id: 'b18', label: 'Pengalaman kerja relevan', aspect: 'Pengalaman', value: null, bagian: '' },
+  { id: 'b19', label: 'Keterampilan praktis yang dimiliki', aspect: 'Pengalaman', value: null, bagian: '' },
+  { id: 'b20', label: 'Potensi pengembangan diri tinggi', aspect: 'Potensi', value: null, bagian: '' },
 ]
 
 export const useFormStore = create<FormState>((set, get) => ({
@@ -75,10 +82,20 @@ export const useFormStore = create<FormState>((set, get) => ({
       partA: state.partA.map((item) => (item.id === id ? { ...item, value } : item)),
     })),
 
-  updatePartB: (id, value) =>
-    set((state) => ({
-      partB: state.partB.map((item) => (item.id === id ? { ...item, value } : item)),
-    })),
+  updatePartB: (id) =>
+    set((state) => {
+      const target = state.partB.find((item) => item.id === id)
+      if (!target) return {}
+      const q = target.pertanyaan || ''
+      return {
+        partB: state.partB.map((item) => {
+          if (item.pertanyaan === q) {
+            return { ...item, value: item.id === id ? 'yes' : 'no' }
+          }
+          return item
+        }),
+      }
+    }),
 
   setNotes: (notes) => set({ notes }),
 
@@ -92,25 +109,40 @@ export const useFormStore = create<FormState>((set, get) => ({
 
   isPartBComplete: () => {
     const state = get()
-    return state.partB.every((item) => item.value !== null)
+    const groups = new Map<string, PartBIndicator[]>()
+    state.partB.forEach((item) => {
+      const q = item.pertanyaan || ''
+      if (!groups.has(q)) groups.set(q, [])
+      groups.get(q)!.push(item)
+    })
+    return Array.from(groups.values()).every((options) =>
+      options.some((opt) => opt.value === 'yes')
+    )
   },
 
   initializeFromInstruments: (instruments) => {
     const partA: PartAIndicator[] = instruments
-      .filter((i) => i.bagian === 'A')
-      .map((i) => ({
-        id: i.id,
-        label: i.indikator,
-        value: null,
-      }))
-
-    const partB: PartBIndicator[] = instruments
-      .filter((i) => i.bagian === 'B')
+      .filter((i) => i.bagian.startsWith('A'))
       .map((i) => ({
         id: i.id,
         label: i.indikator,
         aspect: i.aspek,
+        bagian: i.bagian,
+        pertanyaan: i.pertanyaan,
+        pilihan: i.pilihan,
         value: null,
+      }))
+
+    const partB: PartBIndicator[] = instruments
+      .filter((i) => i.bagian.startsWith('B'))
+      .map((i) => ({
+        id: i.id,
+        label: i.indikator,
+        aspect: i.aspek,
+        pertanyaan: i.pertanyaan,
+        pilihan: i.pilihan,
+        value: null,
+        bagian: i.bagian,
       }))
 
     set({ partA, partB })

@@ -113,7 +113,7 @@ export default function DataKandidat() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Kolom: ID, Nama, Sekolah, Wilayah, Email, TglLahir
+                Kolom: ID, Nama, JenisKelamin, Wilayah, Kampus, Prodi
               </p>
             </div>
 
@@ -166,12 +166,13 @@ export default function DataKandidat() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nama</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Asal Sekolah
+                    Jenis Kelamin
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Wilayah
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Kampus</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Prodi</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Aksi</th>
                 </tr>
               </thead>
@@ -182,9 +183,10 @@ export default function DataKandidat() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {candidate.full_name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{candidate.school}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{candidate.gender}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{candidate.region}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{candidate.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{candidate.school}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{candidate.major}</td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex gap-2 justify-center">
                         <button
@@ -239,13 +241,13 @@ function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModal
   const [full_name, setFull_name] = useState(candidate.full_name)
   const [school, setSchool] = useState(candidate.school)
   const [region, setRegion] = useState(candidate.region)
-  const [email, setEmail] = useState(candidate.email)
-  const [birth_date, setBirth_date] = useState(candidate.birth_date)
+  const [gender, setGender] = useState(candidate.gender || '')
+  const [major, setMajor] = useState(candidate.major || '')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (!full_name || !school || !region) {
-      alert('Harap isi nama, sekolah, dan wilayah')
+    if (!full_name || !school || !region || !gender || !major) {
+      alert('Harap isi nama, kampus, wilayah, jenis kelamin, dan prodi')
       return
     }
 
@@ -255,8 +257,8 @@ function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModal
         full_name,
         school,
         region,
-        email,
-        birth_date: birth_date || null,
+        gender,
+        major,
       })
       onClose()
     } finally {
@@ -281,7 +283,7 @@ function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sekolah</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kampus</label>
             <input
               type="text"
               value={school}
@@ -301,21 +303,24 @@ function EditCandidateModal({ candidate, onClose, onUpdate }: EditCandidateModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Pilih Jenis Kelamin</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prodi</label>
             <input
-              type="date"
-              value={birth_date}
-              onChange={(e) => setBirth_date(e.target.value)}
+              type="text"
+              value={major}
+              onChange={(e) => setMajor(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -352,13 +357,13 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
   const [full_name, setFull_name] = useState('')
   const [school, setSchool] = useState('')
   const [region, setRegion] = useState('')
-  const [email, setEmail] = useState('')
-  const [birth_date, setBirth_date] = useState('')
+  const [gender, setGender] = useState('')
+  const [major, setMajor] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (!id || !full_name || !school || !region) {
-      alert('Harap isi ID, nama, sekolah, dan wilayah')
+    if (!id || !full_name || !school || !region || !gender || !major) {
+      alert('Harap isi ID, nama, kampus, wilayah, jenis kelamin, dan prodi')
       return
     }
 
@@ -369,8 +374,8 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
         full_name,
         school,
         region,
-        email,
-        birth_date: birth_date || null,
+        gender,
+        major,
       })
       onClose()
     } finally {
@@ -407,12 +412,12 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sekolah</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kampus</label>
             <input
               type="text"
               value={school}
               onChange={(e) => setSchool(e.target.value)}
-              placeholder="Nama sekolah"
+              placeholder="Nama kampus"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -429,22 +434,25 @@ function AddCandidateModal({ onClose, onAdd }: AddCandidateModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+            <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Pilih Jenis Kelamin</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prodi</label>
             <input
-              type="date"
-              value={birth_date}
-              onChange={(e) => setBirth_date(e.target.value)}
+              type="text"
+              value={major}
+              onChange={(e) => setMajor(e.target.value)}
+              placeholder="Program Studi"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>

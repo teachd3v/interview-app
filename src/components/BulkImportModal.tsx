@@ -248,18 +248,20 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
                   <thead>
                     <tr className="bg-gray-100 border border-gray-200">
                       <th className="px-2 py-1 text-left">Nama</th>
-                      <th className="px-2 py-1 text-left">Sekolah</th>
+                      <th className="px-2 py-1 text-left">Jenis Kelamin</th>
                       <th className="px-2 py-1 text-left">Wilayah</th>
-                      <th className="px-2 py-1 text-left">Email</th>
+                      <th className="px-2 py-1 text-left">Kampus</th>
+                      <th className="px-2 py-1 text-left">Prodi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {candidatePreview.slice(0, 3).map((item, idx) => (
                       <tr key={idx} className="border border-gray-200">
                         <td className="px-2 py-1">{item.full_name}</td>
-                        <td className="px-2 py-1">{item.school}</td>
+                        <td className="px-2 py-1">{item.gender}</td>
                         <td className="px-2 py-1">{item.region}</td>
-                        <td className="px-2 py-1">{item.email}</td>
+                        <td className="px-2 py-1">{item.school}</td>
+                        <td className="px-2 py-1">{item.major}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -392,8 +394,8 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
                   <tr className="bg-gray-100 border border-gray-200">
                     <th className="px-2 py-1 text-left">Tanggal</th>
                     <th className="px-2 py-1 text-left">Pusat</th>
-                    <th className="px-2 py-1 text-left">Cabang</th>
-                    <th className="px-2 py-1 text-left">Mentor</th>
+                    <th className="px-2 py-1 text-left">Mitra</th>
+                    <th className="px-2 py-1 text-left">Fasil</th>
                     <th className="px-2 py-1 text-left">Kandidat</th>
                   </tr>
                 </thead>
@@ -402,8 +404,8 @@ export default function BulkImportModal({ onClose }: BulkImportModalProps) {
                     <tr key={idx} className="border border-gray-200">
                       <td className="px-2 py-1">{item.interview_date}</td>
                       <td className="px-2 py-1 text-xs">{item.pusat_id}</td>
-                      <td className="px-2 py-1 text-xs">{item.cabang_id}</td>
-                      <td className="px-2 py-1 text-xs">{item.mentor_id}</td>
+                      <td className="px-2 py-1 text-xs">{item.mitra_id}</td>
+                      <td className="px-2 py-1 text-xs">{item.fasil_id}</td>
                       <td className="px-2 py-1 text-xs">{(item.candidate_ids || []).length} kandidat</td>
                     </tr>
                   ))}

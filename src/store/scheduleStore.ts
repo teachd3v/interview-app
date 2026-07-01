@@ -6,8 +6,8 @@ export interface Schedule {
   region_id: string
   interview_date: string
   pusat_id?: string
-  cabang_id?: string
-  mentor_id?: string
+  mitra_id?: string
+  fasil_id?: string
   status: 'belum' | 'berjalan' | 'selesai'
   candidate_ids?: string[] // Candidates assigned ke schedule ini
 }
@@ -58,8 +58,8 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
             region_id: schedule.region_id,
             interview_date: schedule.interview_date,
             pusat_id: schedule.pusat_id,
-            cabang_id: schedule.cabang_id,
-            mentor_id: schedule.mentor_id,
+            mitra_id: schedule.mitra_id,
+            fasil_id: schedule.fasil_id,
             status: schedule.status,
             candidate_ids: (candidatesData || []).map((c: any) => c.candidate_id),
           }
@@ -92,8 +92,8 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
           region_id: data[0].region_id,
           interview_date: data[0].interview_date,
           pusat_id: data[0].pusat_id,
-          cabang_id: data[0].cabang_id,
-          mentor_id: data[0].mentor_id,
+          mitra_id: data[0].mitra_id,
+          fasil_id: data[0].fasil_id,
           status: data[0].status,
           candidate_ids: candidate_ids || [],
         }
@@ -145,8 +145,8 @@ export const useScheduleStore = create<ScheduleStore>((set) => ({
           region_id: schedule.region_id,
           interview_date: schedule.interview_date,
           pusat_id: schedule.pusat_id,
-          cabang_id: schedule.cabang_id,
-          mentor_id: schedule.mentor_id,
+          mitra_id: schedule.mitra_id,
+          fasil_id: schedule.fasil_id,
           status: schedule.status,
           candidate_ids: schedules[index].candidate_ids || [],
         }))

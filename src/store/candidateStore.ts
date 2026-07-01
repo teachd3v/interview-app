@@ -6,8 +6,8 @@ export interface Candidate {
   full_name: string
   school: string
   region: string
-  birth_date?: string | null
-  email: string
+  gender: string
+  major: string
   home_visit_status?: 'pending' | 'lolos' | 'gagal'
 }
 
@@ -47,8 +47,8 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
         full_name: item.full_name,
         school: item.school,
         region: item.region,
-        birth_date: item.birth_date,
-        email: item.email,
+        gender: item.gender,
+        major: item.major,
         home_visit_status: item.home_visit_status,
       }))
 
@@ -106,9 +106,13 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
   addCandidate: async (candidate) => {
     try {
+      const payload = {
+        ...candidate,
+        email: `${candidate.id}@mail.com`
+      }
       const { data, error } = await supabase
         .from('candidates')
-        .insert([candidate])
+        .insert([payload])
         .select()
 
       if (error) {
@@ -129,8 +133,8 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
           full_name: data[0].full_name,
           school: data[0].school,
           region: data[0].region,
-          birth_date: data[0].birth_date,
-          email: data[0].email,
+          gender: data[0].gender,
+          major: data[0].major,
         }
         set((state) => ({
           candidates: [...state.candidates, newCandidate],
@@ -143,9 +147,13 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
   bulkAddCandidates: async (candidates) => {
     try {
+      const payloads = candidates.map((c) => ({
+        ...c,
+        email: `${c.id}@mail.com`
+      }))
       const { data, error } = await supabase
         .from('candidates')
-        .insert(candidates)
+        .insert(payloads)
         .select()
 
       if (error) {
@@ -166,8 +174,8 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
           full_name: item.full_name,
           school: item.school,
           region: item.region,
-          birth_date: item.birth_date,
-          email: item.email,
+          gender: item.gender,
+          major: item.major,
         }))
         set((state) => ({
           candidates: [...state.candidates, ...newCandidates],

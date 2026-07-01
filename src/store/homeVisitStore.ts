@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 export interface HomeVisitResult {
   id: string
   candidateId: string
-  mentorId: string
+  fasilId: string
   submittedAt: string
   partAResults: Array<{
     id: string
@@ -66,7 +66,7 @@ export const useHomeVisitStore = create<HomeVisitStore>((set, get) => ({
       const mappedData = (data || []).map((item: any) => ({
         id: item.id,
         candidateId: item.candidate_id,
-        mentorId: item.mentor_id,
+        fasilId: item.fasil_id,
         submittedAt: item.submitted_at,
         partAResults: item.part_a_results,
         partAPass: item.part_a_pass,
@@ -88,7 +88,7 @@ export const useHomeVisitStore = create<HomeVisitStore>((set, get) => ({
     try {
       const dbPayload = {
         candidate_id: result.candidateId,
-        mentor_id: result.mentorId,
+        fasil_id: result.fasilId,
         submitted_at: result.submittedAt,
         part_a_results: result.partAResults,
         part_a_pass: result.partAPass,

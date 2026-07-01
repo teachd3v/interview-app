@@ -35,12 +35,16 @@ export default function HasilHomeVisit() {
     return candidates.find((c) => c.id === id)?.region || '-'
   }
 
-  const getCandidateEmail = (id: string) => {
-    return candidates.find((c) => c.id === id)?.email || '-'
+  const getCandidateGender = (id: string) => {
+    return candidates.find((c) => c.id === id)?.gender || '-'
+  }
+
+  const getCandidateMajor = (id: string) => {
+    return candidates.find((c) => c.id === id)?.major || '-'
   }
 
   const getInterviewerName = (id: string) => {
-    return interviewers.find((i) => i.id === id)?.full_name || `Mentor ${id}`
+    return interviewers.find((i) => i.id === id)?.full_name || `Fasil ${id}`
   }
 
   const formatDate = (dateString: string) => {
@@ -54,11 +58,11 @@ export default function HasilHomeVisit() {
   // Filter logic
   const filteredResults = results.filter((result) => {
     const candidateName = getCandidateName(result.candidateId).toLowerCase()
-    const mentorName = getInterviewerName(result.mentorId).toLowerCase()
+    const fasilName = getInterviewerName(result.fasilId).toLowerCase()
     const region = getCandidateRegion(result.candidateId)
     
     const matchesSearch = candidateName.includes(searchTerm.toLowerCase()) || 
-                         mentorName.includes(searchTerm.toLowerCase())
+                         fasilName.includes(searchTerm.toLowerCase())
     const matchesRegion = filterRegion === 'all' || region === filterRegion
 
     return matchesSearch && matchesRegion
@@ -78,13 +82,14 @@ export default function HasilHomeVisit() {
       [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
       [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
       [],
-      ['Nama Kandidat', 'Email', 'Sekolah', 'Wilayah', 'Mentor (Visitor)', 'Status Rekomendasi', 'Skor (%)', 'Tanggal'],
+      ['Nama Kandidat', 'Jenis Kelamin', 'Kampus', 'Prodi', 'Wilayah', 'Fasil (Visitor)', 'Status Rekomendasi', 'Skor (%)', 'Tanggal'],
       ...filteredResults.map((r) => [
         getCandidateName(r.candidateId),
-        getCandidateEmail(r.candidateId),
+        getCandidateGender(r.candidateId),
         getCandidateSchool(r.candidateId),
+        getCandidateMajor(r.candidateId),
         getCandidateRegion(r.candidateId),
-        getInterviewerName(r.mentorId),
+        getInterviewerName(r.fasilId),
         r.recommendationStatus,
         r.percentage.toFixed(2),
         formatDate(r.submittedAt),
@@ -96,10 +101,11 @@ export default function HasilHomeVisit() {
     XLSX.utils.book_append_sheet(wb, ws, 'Hasil Home Visit')
     ws['!cols'] = [
       { wch: 30 }, // Nama Kandidat
-      { wch: 30 }, // Email
-      { wch: 25 }, // Sekolah
+      { wch: 15 }, // Jenis Kelamin
+      { wch: 25 }, // Kampus
+      { wch: 25 }, // Prodi
       { wch: 20 }, // Wilayah
-      { wch: 25 }, // Mentor (Visitor)
+      { wch: 25 }, // Fasil (Visitor)
       { wch: 20 }, // Status Rekomendasi
       { wch: 15 }, // Skor (%)
       { wch: 20 }  // Tanggal
@@ -114,7 +120,7 @@ export default function HasilHomeVisit() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">🏠 Hasil Home Visit</h1>
-            <p className="text-sm text-gray-600 mt-1">Rekapitulasi data observasi lapangan oleh Mentor</p>
+            <p className="text-sm text-gray-600 mt-1">Rekapitulasi data observasi lapangan oleh Fasil</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -159,7 +165,7 @@ export default function HasilHomeVisit() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Cari nama kandidat atau mentor..."
+              placeholder="Cari nama kandidat atau fasil..."
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchBar(e.target.value)}
@@ -187,7 +193,7 @@ export default function HasilHomeVisit() {
                 <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
                   <th className="px-6 py-4">Kandidat & Sekolah</th>
                   <th className="px-6 py-4">Wilayah</th>
-                  <th className="px-6 py-4">Mentor (Visitor)</th>
+                  <th className="px-6 py-4">Fasil (Visitor)</th>
                   <th className="px-6 py-4 text-center">Skor (%)</th>
                   <th className="px-6 py-4">Rekomendasi</th>
                   <th className="px-6 py-4 text-right">Aksi</th>
@@ -213,7 +219,7 @@ export default function HasilHomeVisit() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {getInterviewerName(r.mentorId)}
+                        {getInterviewerName(r.fasilId)}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className="font-mono font-bold text-blue-600">

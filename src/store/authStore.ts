@@ -5,7 +5,7 @@ interface AuthStore {
   role: string | null
   interviewerId: string | null
   interviewerName: string | null
-  setRole: (role: 'admin' | 'pusat' | 'cabang' | 'mentor' | null) => void
+  setRole: (role: 'admin' | 'pusat' | 'mitra' | 'fasil' | null) => void
   setInterviewer: (id: string, name: string) => void
   logout: () => void
 }

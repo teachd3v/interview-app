@@ -82,28 +82,30 @@ export default function InterviewerDashboard() {
   }, [interviewerId, role, navigate])
 
   const currentInterviewer = interviewers.find(i => i.id === interviewerId)
-  const mentorRegion = currentInterviewer?.region
+  const fasilRegion = currentInterviewer?.region
+
+  console.log('InterviewerDashboard debug:', { role, interviewerId, allSchedules })
 
   // Filter schedules berdasarkan role dan interviewer ID, sorted by date (ascending)
   const schedules = allSchedules
     .filter((schedule) => {
       if (role === 'pusat') {
         return schedule.pusat_id === interviewerId
-      } else if (role === 'cabang') {
-        return schedule.cabang_id === interviewerId
-      } else if (role === 'mentor') {
-        return schedule.mentor_id === interviewerId
+      } else if (role === 'mitra') {
+        return schedule.mitra_id === interviewerId
+      } else if (role === 'fasil') {
+        return schedule.fasil_id === interviewerId
       }
       return false
     })
     .sort((a, b) => new Date(a.interview_date).getTime() - new Date(b.interview_date).getTime())
 
-  // Filter kandidat untuk Home Visit (hanya mentor)
-  const candidatesToVisit = role === 'mentor' 
+  // Filter kandidat untuk Home Visit (hanya fasil)
+  const candidatesToVisit = role === 'fasil' 
     ? candidates
         .filter(c => {
-          // Harus di wilayah mentor
-          if (c.region !== mentorRegion) return false
+          // Harus di wilayah fasil jika ditentukan
+          if (fasilRegion && fasilRegion !== '-' && c.region !== fasilRegion) return false
           
           // Harus sudah diinterview 3 kali (atau 2x untuk Pidie Jaya)
           const candResults = results.filter(r => r.candidateId === c.id)
@@ -219,8 +221,8 @@ export default function InterviewerDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tab Navigation for Mentor */}
-        {role === 'mentor' && (
+        {/* Tab Navigation for Fasil */}
+        {role === 'fasil' && (
           <div className="flex gap-1 p-1 bg-gray-200 rounded-xl mb-8 w-fit">
             <button
               onClick={() => setActiveTab('jadwal')}
@@ -269,7 +271,7 @@ export default function InterviewerDashboard() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-600">
-                          🏛️ {getInterviewerName(schedule.pusat_id)} • 🏢 {getInterviewerName(schedule.cabang_id)} • 👨‍🏫 {getInterviewerName(schedule.mentor_id)}
+                          🏛️ {getInterviewerName(schedule.pusat_id)} • 🤝 {getInterviewerName(schedule.mitra_id)} • 📋 {getInterviewerName(schedule.fasil_id)}
                         </p>
                       </div>
                       <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusColor(schedule.status)}`}>
@@ -339,7 +341,7 @@ export default function InterviewerDashboard() {
           <>
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Kandidat Siap Home Visit</h2>
-              <p className="text-sm text-gray-600 mt-1">Daftar kandidat di wilayah {mentorRegion} yang telah lulus 3 tahap wawancara.</p>
+              <p className="text-sm text-gray-600 mt-1">Daftar kandidat {fasilRegion && fasilRegion !== '-' ? `di wilayah ${fasilRegion}` : ''} yang telah lulus 3 tahap wawancara.</p>
             </div>
 
             {candidatesToVisit.length === 0 ? (

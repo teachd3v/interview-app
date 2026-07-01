@@ -23,7 +23,7 @@ export default function DataInstrument() {
   }, [])
 
   const filteredInstruments = instruments.filter((i) => {
-    if (filterBagian && i.bagian !== filterBagian) return false
+    if (filterBagian && !i.bagian.startsWith(filterBagian)) return false
     if (filterAspek && i.aspek !== filterAspek) return false
     return true
   })
@@ -181,7 +181,9 @@ export default function DataInstrument() {
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Bagian</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Aspek</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Indikator</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Pertanyaan</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Indikator / Rubrik</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Pilihan</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Keterangan</th>
                 <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Aksi</th>
               </tr>
@@ -192,20 +194,26 @@ export default function DataInstrument() {
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
-                        instrument.bagian === 'A'
+                        instrument.bagian.startsWith('A')
                           ? 'bg-red-100 text-red-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}
                     >
-                      {instrument.bagian === 'A' ? 'A - Wajib' : 'B - Pendukung'}
+                      {instrument.bagian}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{instrument.aspek}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-900 font-medium max-w-xs truncate" title={instrument.pertanyaan}>
+                    {instrument.pertanyaan || '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={instrument.indikator}>
                     {instrument.indikator}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                    {instrument.keterangan}
+                  <td className="px-6 py-4 text-sm text-gray-600 font-mono text-xs">
+                    {instrument.pilihan || '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={instrument.keterangan}>
+                    {instrument.keterangan || '-'}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex gap-2 justify-center">
@@ -234,6 +242,7 @@ export default function DataInstrument() {
       {(showAddForm || editingId) && (
         <InstrumentFormModal
           instrument={editingId ? instruments.find((i) => i.id === editingId) : undefined}
+          instruments={instruments}
           onClose={() => {
             setShowAddForm(false)
             setEditingId(null)
@@ -257,15 +266,32 @@ export default function DataInstrument() {
 
 interface InstrumentFormModalProps {
   instrument?: Instrument
+  instruments: Instrument[]
   onClose: () => void
   onSave: (instrument: Instrument) => void
 }
 
-function InstrumentFormModal({ instrument, onClose, onSave }: InstrumentFormModalProps) {
+function InstrumentFormModal({ instrument, instruments, onClose, onSave }: InstrumentFormModalProps) {
   const id = instrument?.id || `inst-${Date.now()}`
-  const [bagian, setBagian] = useState<'A' | 'B'>(instrument?.bagian || 'B')
+  
+  const existingBagian = Array.from(new Set(instruments.map((i) => i.bagian).filter(Boolean)))
+  const defaultBagian = [
+    'A. VERIFIKASI DATA SOSIAL-EKONOMI & KELAYAKAN ADMINISTRATIF',
+    'B. PRESENTASI DIRI, WAWASAN & KEMAMPUAN KOMUNIKASI',
+    'B. NILAI, KARAKTER, RESILIENSI & KEBIASAAN',
+    'B. KESIAPAN HIDUP MANDIRI & MANAJEMEN FINANSIAL MAHASISWA',
+  ]
+  const unionBagian = Array.from(new Set([...defaultBagian, ...existingBagian]))
+
+  const initialBagian = instrument?.bagian || unionBagian[0]
+  const isCustomInitial = !unionBagian.includes(initialBagian)
+
+  const [selectedBagian, setSelectedBagian] = useState(isCustomInitial ? 'custom' : initialBagian)
+  const [customBagian, setCustomBagian] = useState(isCustomInitial ? initialBagian : '')
   const [aspek, setAspek] = useState(instrument?.aspek || '')
+  const [pertanyaan, setPertanyaan] = useState(instrument?.pertanyaan || '')
   const [indikator, setIndikator] = useState(instrument?.indikator || '')
+  const [pilihan, setPilihan] = useState(instrument?.pilihan || '')
   const [keterangan, setKeterangan] = useState(instrument?.keterangan || '')
   const [error, setError] = useState('')
   const aspekOptions = [
@@ -282,17 +308,30 @@ function InstrumentFormModal({ instrument, onClose, onSave }: InstrumentFormModa
 
   const handleSubmit = () => {
     setError('')
+    const finalBagian = selectedBagian === 'custom' ? customBagian.trim() : selectedBagian
 
-    if (!bagian || !aspek || !indikator) {
-      setError('Harap lengkapi Bagian, Aspek, dan Indikator')
+    if (!finalBagian) {
+      setError('Harap isi Bagian')
+      return
+    }
+
+    if (!finalBagian.toUpperCase().startsWith('A') && !finalBagian.toUpperCase().startsWith('B')) {
+      setError('Bagian harus diawali huruf A atau B (contoh: "A. Kelayakan")')
+      return
+    }
+
+    if (!aspek || !indikator) {
+      setError('Harap lengkapi Aspek dan Indikator')
       return
     }
 
     onSave({
       id,
-      bagian,
+      bagian: finalBagian,
       aspek,
+      pertanyaan,
       indikator,
+      pilihan,
       keterangan,
       urutan: instrument?.urutan || 0,
     })
@@ -313,25 +352,40 @@ function InstrumentFormModal({ instrument, onClose, onSave }: InstrumentFormModa
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bagian</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bagian (Instansi / Kelompok)</label>
               <select
-                value={bagian}
-                onChange={(e) => setBagian(e.target.value as 'A' | 'B')}
+                value={selectedBagian}
+                onChange={(e) => setSelectedBagian(e.target.value)}
                 disabled={!!instrument}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 mb-2"
               >
-                <option value="A">A - Kualifikasi Wajib (Max 8)</option>
-                <option value="B">B - Kualifikasi Pendukung (Max 20)</option>
+                {unionBagian.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+                <option value="custom">+ Custom Bagian Baru...</option>
               </select>
+
+              {selectedBagian === 'custom' && (
+                <input
+                  type="text"
+                  placeholder="Ketik Bagian Baru (Harus diawali A atau B)..."
+                  value={customBagian}
+                  onChange={(e) => setCustomBagian(e.target.value)}
+                  disabled={!!instrument}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                />
+              )}
             </div>
 
             <div>
@@ -352,25 +406,49 @@ function InstrumentFormModal({ instrument, onClose, onSave }: InstrumentFormModa
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Indikator</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Pertanyaan Panduan</label>
+            <textarea
+              value={pertanyaan}
+              onChange={(e) => setPertanyaan(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+              placeholder="Deskripsi pertanyaan untuk panduan interviewer..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Indikator / Rubrik Penilaian</label>
             <input
               type="text"
               value={indikator}
               onChange={(e) => setIndikator(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Pertanyaan atau statement..."
+              placeholder="Kriteria penilaian atau statement..."
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-            <textarea
-              value={keterangan}
-              onChange={(e) => setKeterangan(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={4}
-              placeholder="Penjelasan, rubric, atau deskripsi indikator..."
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Opsi Jawaban / Skor (Pilihan)</label>
+              <input
+                type="text"
+                value={pilihan}
+                onChange={(e) => setPilihan(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Ya; Tidak atau 3, 2, 1..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+              <input
+                type="text"
+                value={keterangan}
+                onChange={(e) => setKeterangan(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Skoring, Syarat mutlak, dll..."
+              />
+            </div>
           </div>
         </div>
 

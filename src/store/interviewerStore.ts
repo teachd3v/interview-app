@@ -4,9 +4,9 @@ import { supabase } from '../lib/supabase'
 export interface Interviewer {
   id: string
   full_name: string
-  role: 'pusat' | 'cabang' | 'mentor'
-  region: string
-  email: string
+  role: 'pusat' | 'mitra' | 'fasil'
+  region?: string
+  email?: string
 }
 
 interface InterviewerStore {
@@ -16,7 +16,7 @@ interface InterviewerStore {
   bulkAddInterviewers: (interviewers: Interviewer[]) => Promise<void>
   deleteInterviewer: (id: string) => Promise<void>
   updateInterviewer: (id: string, interviewer: Partial<Interviewer>) => Promise<void>
-  getInterviewersByRole: (role: 'pusat' | 'cabang' | 'mentor') => Interviewer[]
+  getInterviewersByRole: (role: 'pusat' | 'mitra' | 'fasil') => Interviewer[]
   loadFromSupabase: () => Promise<void>
 }
 
@@ -56,9 +56,14 @@ export const useInterviewerStore = create<InterviewerStore>((set, get) => ({
 
   addInterviewer: async (interviewer) => {
     try {
+      const payload = {
+        ...interviewer,
+        region: interviewer.region || '-',
+        email: interviewer.email || `${interviewer.id}@mail.com`,
+      }
       const { data, error } = await supabase
         .from('interviewers')
-        .insert([interviewer])
+        .insert([payload])
         .select()
 
       if (error) {
@@ -91,9 +96,14 @@ export const useInterviewerStore = create<InterviewerStore>((set, get) => ({
 
   bulkAddInterviewers: async (interviewers) => {
     try {
+      const payloads = interviewers.map((i) => ({
+        ...i,
+        region: i.region || '-',
+        email: i.email || `${i.id}@mail.com`,
+      }))
       const { data, error } = await supabase
         .from('interviewers')
-        .insert(interviewers)
+        .insert(payloads)
         .select()
 
       if (error) {

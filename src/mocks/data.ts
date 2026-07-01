@@ -1,16 +1,16 @@
 export interface Candidate {
   id: string
   fullName: string
-  school: string
+  gender: string
   region: string
-  birthDate: string
-  email: string
+  school: string
+  major: string
 }
 
 export interface Interviewer {
   id: string
   fullName: string
-  role: 'pusat' | 'cabang' | 'mentor'
+  role: 'pusat' | 'mitra' | 'fasil'
   region: string
 }
 
@@ -19,8 +19,8 @@ export interface InterviewSchedule {
   candidateId: string
   date: string
   pusat: Interviewer | null
-  cabang: Interviewer | null
-  mentor: Interviewer | null
+  mitra: Interviewer | null
+  fasil: Interviewer | null
   status: 'belum' | 'berjalan' | 'selesai'
 }
 
@@ -28,42 +28,42 @@ export const mockCandidates: Candidate[] = [
   {
     id: '001',
     fullName: 'Ahmad Rizki Pratama',
-    school: 'SMA Negeri 1 Jakarta',
+    gender: 'Laki-laki',
     region: 'DKI Jakarta',
-    birthDate: '2003-05-15',
-    email: 'ahmad.rizki@email.com',
+    school: 'Universitas Indonesia',
+    major: 'Teknik Informatika',
   },
   {
     id: '002',
     fullName: 'Siti Nurhaliza Wijaya',
-    school: 'SMA Negeri 2 Bandung',
+    gender: 'Perempuan',
     region: 'Jawa Barat',
-    birthDate: '2003-08-22',
-    email: 'siti.haliza@email.com',
+    school: 'Institut Teknologi Bandung',
+    major: 'Sistem Informasi',
   },
   {
     id: '003',
     fullName: 'Budi Santoso',
-    school: 'SMA Negeri 3 Surabaya',
+    gender: 'Laki-laki',
     region: 'Jawa Timur',
-    birthDate: '2002-11-10',
-    email: 'budi.santoso@email.com',
+    school: 'Universitas Airlangga',
+    major: 'Manajemen',
   },
   {
     id: '004',
     fullName: 'Dewi Kusuma Negara',
-    school: 'SMA Negeri 1 Medan',
+    gender: 'Perempuan',
     region: 'Sumatera Utara',
-    birthDate: '2003-03-20',
-    email: 'dewi.kusuma@email.com',
+    school: 'Universitas Sumatera Utara',
+    major: 'Akuntansi',
   },
   {
     id: '005',
     fullName: 'Muhammad Fajar Hadyan',
-    school: 'SMA Negeri 1 Yogyakarta',
+    gender: 'Laki-laki',
     region: 'DI Yogyakarta',
-    birthDate: '2002-09-12',
-    email: 'muhammad.fajar@email.com',
+    school: 'Universitas Gadjah Mada',
+    major: 'Psikologi',
   },
 ]
 
@@ -83,25 +83,25 @@ export const mockInterviewers: Interviewer[] = [
   {
     id: 'int-003',
     fullName: 'Pak Hendra Gunawan',
-    role: 'cabang',
+    role: 'mitra',
     region: 'Jawa Barat',
   },
   {
     id: 'int-004',
     fullName: 'Dr. Eka Putri',
-    role: 'cabang',
+    role: 'mitra',
     region: 'Jawa Timur',
   },
   {
     id: 'int-005',
-    fullName: 'Mentor Ahmad Syaiful',
-    role: 'mentor',
+    fullName: 'Fasil Ahmad Syaiful',
+    role: 'fasil',
     region: 'DKI Jakarta',
   },
   {
     id: 'int-006',
-    fullName: 'Mentor Sri Rahayu',
-    role: 'mentor',
+    fullName: 'Fasil Sri Rahayu',
+    role: 'fasil',
     region: 'Jawa Barat',
   },
 ]
@@ -112,8 +112,8 @@ export const mockSchedules: InterviewSchedule[] = [
     candidateId: '001',
     date: '2025-06-01',
     pusat: mockInterviewers[0],
-    cabang: null,
-    mentor: null,
+    mitra: null,
+    fasil: null,
     status: 'belum',
   },
   {
@@ -121,8 +121,8 @@ export const mockSchedules: InterviewSchedule[] = [
     candidateId: '002',
     date: '2025-06-01',
     pusat: mockInterviewers[1],
-    cabang: mockInterviewers[2],
-    mentor: mockInterviewers[4],
+    mitra: mockInterviewers[2],
+    fasil: mockInterviewers[4],
     status: 'berjalan',
   },
   {
@@ -130,8 +130,8 @@ export const mockSchedules: InterviewSchedule[] = [
     candidateId: '003',
     date: '2025-06-02',
     pusat: mockInterviewers[0],
-    cabang: mockInterviewers[3],
-    mentor: mockInterviewers[5],
+    mitra: mockInterviewers[3],
+    fasil: mockInterviewers[5],
     status: 'selesai',
   },
 ]

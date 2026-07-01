@@ -42,7 +42,7 @@ export default function HasilHomeVisitDetail() {
   }
 
   const candidate = candidates.find((c) => c.id === result.candidateId)
-  const mentor = interviewers.find((i) => i.id === result.mentorId)
+  const fasil = interviewers.find((i) => i.id === result.fasilId)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
@@ -69,15 +69,17 @@ export default function HasilHomeVisitDetail() {
             <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Kandidat</h2>
             <p className="text-xl font-black text-gray-900">{candidate?.full_name || 'Memuat...'}</p>
             <div className="mt-2 space-y-1">
-              <p className="text-sm text-gray-600 flex items-center gap-2">🏫 {candidate?.school || '-'}</p>
-              <p className="text-sm text-gray-600 flex items-center gap-2">📍 {candidate?.region || '-'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">🏫 Kampus: {candidate?.school || '-'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">🎓 Prodi: {candidate?.major || '-'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">🚻 Jenis Kelamin: {candidate?.gender || '-'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">📍 Wilayah: {candidate?.region || '-'}</p>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Mentor Visitor</h2>
-            <p className="text-xl font-black text-gray-900">{mentor?.full_name || 'Memuat...'}</p>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Fasil Visitor</h2>
+            <p className="text-xl font-black text-gray-900">{fasil?.full_name || 'Memuat...'}</p>
             <div className="mt-2 space-y-1">
-              <p className="text-sm text-gray-600 flex items-center gap-2">👨‍🏫 Role: {mentor?.role || '-'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">📋 Role: {fasil?.role || '-'}</p>
               <p className="text-sm text-gray-600 flex items-center gap-2">🕒 Submit: {new Date(result.submittedAt).toLocaleString('id-ID')}</p>
             </div>
           </div>
@@ -227,7 +229,7 @@ export default function HasilHomeVisitDetail() {
           {/* Kesimpulan Akhir */}
           <div className="bg-gray-900 rounded-2xl p-8 text-white shadow-xl">
             <h2 className="text-lg font-black mb-4 flex items-center gap-2">
-              <span className="text-2xl">📝</span> Kesimpulan & Catatan Mentor
+              <span className="text-2xl">📝</span> Kesimpulan & Catatan Fasil
             </h2>
             <p className="text-gray-300 leading-relaxed italic">
               {result.notes ? `"${result.notes}"` : "(Tidak ada catatan kesimpulan akhir)"}

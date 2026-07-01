@@ -296,7 +296,7 @@ export default function FormHomeVisit() {
       
       const payload = {
         candidateId: candidateId || '',
-        mentorId: interviewerId || '',
+        fasilId: interviewerId || '',
         submittedAt: new Date().toISOString(),
         partAResults: partAResults,
         partAPass: results.partAPass,
@@ -327,9 +327,11 @@ export default function FormHomeVisit() {
       ['Informasi Kandidat'],
       ['Nama:', candidate.full_name],
       ['ID Kandidat:', candidate.id],
-      ['Email:', candidate.email],
+      ['Jenis Kelamin:', candidate.gender],
+      ['Kampus:', candidate.school],
+      ['Prodi:', candidate.major],
       ['Wilayah:', candidate.region],
-      ['Mentor/Visitor:', interviewerName],
+      ['Fasil/Visitor:', interviewerName],
       ['Tanggal:', new Date().toLocaleDateString('id-ID')],
       [],
       ['BAGIAN A (WAJIB)', '', 'Catatan'],
@@ -772,7 +774,7 @@ export default function FormHomeVisit() {
               </div>
 
               <div className="pt-6 border-t border-gray-100">
-                <label className="block text-sm font-black text-gray-800 mb-3">Kesimpulan Akhir Mentor:</label>
+                <label className="block text-sm font-black text-gray-800 mb-3">Kesimpulan Akhir Fasil:</label>
                 <textarea
                   value={generalNotes}
                   onChange={(e) => setGeneralNotes(e.target.value)}

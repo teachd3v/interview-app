@@ -18,8 +18,8 @@ export interface ParsedScheduleData {
     region_id: string
     interview_date: string
     pusat_id?: string
-    cabang_id?: string
-    mentor_id?: string
+    mitra_id?: string
+    fasil_id?: string
     status: 'belum' | 'berjalan' | 'selesai'
     candidate_ids: string[]
   }>
@@ -61,10 +61,10 @@ export const parseExcelFile = (file: File): Promise<ParsedCandidateData> => {
             // Flexible column name matching (case-insensitive, trim spaces)
             const id = String(row['ID'] || row['id'] || row['Id'] || '').trim()
             const fullName = String(row['Nama'] || row['nama'] || row['Name'] || row['name'] || '').trim()
-            const school = String(row['Sekolah'] || row['sekolah'] || row['School'] || row['school'] || '').trim()
+            const gender = String(row['JenisKelamin'] || row['jenisKelamin'] || row['Jenis Kelamin'] || row['gender'] || row['Gender'] || '').trim()
             const region = String(row['Wilayah'] || row['wilayah'] || row['Region'] || row['region'] || '').trim()
-            const email = String(row['Email'] || row['email'] || '').trim()
-            const birthDate = String(row['TglLahir'] || row['tglLahir'] || row['Tanggal Lahir'] || row['BirthDate'] || row['birthDate'] || '').trim()
+            const school = String(row['Kampus'] || row['kampus'] || row['Campus'] || row['campus'] || row['Sekolah'] || row['sekolah'] || '').trim()
+            const major = String(row['Prodi'] || row['prodi'] || row['Program Studi'] || row['Major'] || row['major'] || '').trim()
 
             // Validation
             if (!id) {
@@ -72,37 +72,24 @@ export const parseExcelFile = (file: File): Promise<ParsedCandidateData> => {
               return
             }
             if (!fullName) {
-              errors.push(`Row ${index + 2}: Name is required`)
+              errors.push(`Row ${index + 2}: Nama is required`)
               return
             }
-            if (!school) {
-              errors.push(`Row ${index + 2}: School is required`)
+            if (!gender) {
+              errors.push(`Row ${index + 2}: JenisKelamin is required`)
               return
             }
             if (!region) {
-              errors.push(`Row ${index + 2}: Region is required`)
+              errors.push(`Row ${index + 2}: Wilayah is required`)
               return
             }
-            if (!email) {
-              errors.push(`Row ${index + 2}: Email is required`)
+            if (!school) {
+              errors.push(`Row ${index + 2}: Kampus is required`)
               return
             }
-
-            // Basic email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            if (!emailRegex.test(email)) {
-              errors.push(`Row ${index + 2}: Invalid email format`)
+            if (!major) {
+              errors.push(`Row ${index + 2}: Prodi is required`)
               return
-            }
-
-            // Format date (accept various formats: YYYY-MM-DD, DD/MM/YYYY, etc)
-            let formattedDate = birthDate
-            if (birthDate && !birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-              // Try to parse and reformat
-              const parsed = new Date(birthDate)
-              if (!isNaN(parsed.getTime())) {
-                formattedDate = parsed.toISOString().split('T')[0]
-              }
             }
 
             candidates.push({
@@ -110,8 +97,8 @@ export const parseExcelFile = (file: File): Promise<ParsedCandidateData> => {
               full_name: fullName,
               school,
               region,
-              email,
-              birth_date: formattedDate || null,
+              gender,
+              major,
             })
           } catch (error) {
             errors.push(`Row ${index + 2}: Failed to parse row`)
@@ -169,14 +156,11 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
             // Normalize role variations (handle "Pusat" → "pusat", etc)
             if (role === 'pusat' || role === 'Pusat' || role === 'PUSAT') {
               role = 'pusat'
-            } else if (role === 'cabang' || role === 'Cabang' || role === 'CABANG') {
-              role = 'cabang'
-            } else if (role === 'mentor' || role === 'Mentor' || role === 'MENTOR') {
-              role = 'mentor'
+            } else if (role === 'mitra' || role === 'Mitra' || role === 'MITRA' || role === 'cabang' || role === 'Cabang' || role === 'CABANG') {
+              role = 'mitra'
+            } else if (role === 'fasil' || role === 'Fasil' || role === 'FASIL' || role === 'mentor' || role === 'Mentor' || role === 'MENTOR') {
+              role = 'fasil'
             }
-
-            const region = String(row['Region'] || row['region'] || row['Wilayah'] || row['wilayah'] || '').trim()
-            const email = String(row['Email'] || row['email'] || '').trim()
 
             // Validation
             if (!id) {
@@ -184,34 +168,18 @@ export const parseInterviewerExcelFile = (file: File): Promise<ParsedInterviewer
               return
             }
             if (!fullName) {
-              errors.push(`Row ${index + 2}: Name is required`)
+              errors.push(`Row ${index + 2}: Nama is required`)
               return
             }
-            if (!role || !['pusat', 'cabang', 'mentor'].includes(role)) {
-              errors.push(`Row ${index + 2}: Role must be pusat, cabang, or mentor (case-insensitive)`)
-              return
-            }
-            if (!region) {
-              errors.push(`Row ${index + 2}: Region is required`)
-              return
-            }
-            if (!email) {
-              errors.push(`Row ${index + 2}: Email is required`)
-              return
-            }
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            if (!emailRegex.test(email)) {
-              errors.push(`Row ${index + 2}: Invalid email format`)
+            if (!role || !['pusat', 'mitra', 'fasil'].includes(role)) {
+              errors.push(`Row ${index + 2}: Role must be pusat, mitra, or fasil (case-insensitive)`)
               return
             }
 
             interviewers.push({
               id,
               full_name: fullName,
-              role: role as 'pusat' | 'cabang' | 'mentor',
-              region,
-              email,
+              role: role as 'pusat' | 'mitra' | 'fasil',
             })
           } catch (error) {
             errors.push(`Row ${index + 2}: Failed to parse row`)
@@ -240,26 +208,26 @@ export const downloadCandidateTemplate = () => {
     {
       ID: '001',
       Nama: 'Ahmad Rizki Pratama',
-      Sekolah: 'SMA Negeri 1 Jakarta',
+      JenisKelamin: 'Laki-laki',
       Wilayah: 'DKI Jakarta',
-      Email: 'ahmad@email.com',
-      TglLahir: '2003-05-15',
+      Kampus: 'Universitas Indonesia',
+      Prodi: 'Teknik Informatika',
     },
     {
       ID: '002',
       Nama: 'Siti Nurhaliza Wijaya',
-      Sekolah: 'SMA Negeri 2 Bandung',
+      JenisKelamin: 'Perempuan',
       Wilayah: 'Jawa Barat',
-      Email: 'siti@email.com',
-      TglLahir: '2003-08-22',
+      Kampus: 'Institut Teknologi Bandung',
+      Prodi: 'Sistem Informasi',
     },
     {
       ID: '003',
       Nama: 'Budi Santoso',
-      Sekolah: 'SMA Negeri 3 Surabaya',
+      JenisKelamin: 'Laki-laki',
       Wilayah: 'Jawa Timur',
-      Email: 'budi.santoso@email.com',
-      TglLahir: '2002-11-10',
+      Kampus: 'Universitas Airlangga',
+      Prodi: 'Manajemen',
     },
   ]
 
@@ -268,7 +236,7 @@ export const downloadCandidateTemplate = () => {
   XLSX.utils.book_append_sheet(wb, ws, 'Kandidat')
 
   // Auto-size columns
-  ws['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 15 }]
+  ws['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 25 }]
 
   XLSX.writeFile(wb, 'template-kandidat.xlsx')
 }
@@ -316,8 +284,8 @@ export const parseScheduleExcelFile = async (file: File): Promise<ParsedSchedule
             const wilayahCode = String(row['Wilayah'] || row['wilayah'] || row['Region'] || row['region'] || '').trim().toUpperCase()
             const date = String(row['TanggalWawancara'] || row['tanggalWawancara'] || row['Tanggal'] || row['Date'] || '').trim()
             const pusatId = String(row['IDInterviewerPusat'] || row['idInterviewerPusat'] || row['Pusat'] || '').trim()
-            const cabangId = String(row['IDInterviewerCabang'] || row['idInterviewerCabang'] || row['Cabang'] || '').trim()
-            const mentorId = String(row['IDInterviewerMentor'] || row['idInterviewerMentor'] || row['Mentor'] || '').trim()
+            const mitraId = String(row['IDInterviewerMitra'] || row['idInterviewerMitra'] || row['IDInterviewerCabang'] || row['idInterviewerCabang'] || row['Mitra'] || row['Cabang'] || '').trim()
+            const fasilId = String(row['IDInterviewerFasil'] || row['idInterviewerFasil'] || row['IDInterviewerMentor'] || row['idInterviewerMentor'] || row['Fasil'] || row['Mentor'] || '').trim()
             const daftarKandidatStr = String(row['DaftarKandidat'] || row['daftarKandidat'] || row['Kandidat'] || '').trim()
 
             // Validation
@@ -360,8 +328,8 @@ export const parseScheduleExcelFile = async (file: File): Promise<ParsedSchedule
             }
 
             // At least one interviewer should be provided
-            if (!pusatId && !cabangId && !mentorId) {
-              errors.push(`Row ${index + 2}: Minimal 1 interviewer ID harus diisi (Pusat, Cabang, atau Mentor)`)
+            if (!pusatId && !mitraId && !fasilId) {
+              errors.push(`Row ${index + 2}: Minimal 1 interviewer ID harus diisi (Pusat, Mitra, atau Fasil)`)
               return
             }
 
@@ -369,8 +337,8 @@ export const parseScheduleExcelFile = async (file: File): Promise<ParsedSchedule
               region_id: regionId,
               interview_date: date,
               pusat_id: pusatId || undefined,
-              cabang_id: cabangId || undefined,
-              mentor_id: mentorId || undefined,
+              mitra_id: mitraId || undefined,
+              fasil_id: fasilId || undefined,
               status: 'belum',
               candidate_ids: candidateIds,
             })
@@ -402,43 +370,31 @@ export const downloadInterviewerTemplate = () => {
       ID: 'int-001',
       Nama: 'Dr. Bambang Sutrisno',
       Role: 'pusat',
-      Region: 'DKI Jakarta',
-      Email: 'bambang.sutrisno@lpdp.go.id',
     },
     {
       ID: 'int-002',
       Nama: 'Ibu Sinta Wijaya',
       Role: 'pusat',
-      Region: 'DKI Jakarta',
-      Email: 'sinta.wijaya@lpdp.go.id',
     },
     {
       ID: 'int-003',
       Nama: 'Pak Hendra Gunawan',
-      Role: 'cabang',
-      Region: 'Jawa Barat',
-      Email: 'hendra.gunawan@lpdp.go.id',
+      Role: 'mitra',
     },
     {
       ID: 'int-004',
       Nama: 'Dr. Eka Putri',
-      Role: 'cabang',
-      Region: 'Jawa Timur',
-      Email: 'eka.putri@lpdp.go.id',
+      Role: 'mitra',
     },
     {
       ID: 'int-005',
-      Nama: 'Ahmad Syaiful (Mentor)',
-      Role: 'mentor',
-      Region: 'DKI Jakarta',
-      Email: 'ahmad.mentor@email.com',
+      Nama: 'Ahmad Syaiful (Fasil)',
+      Role: 'fasil',
     },
     {
       ID: 'int-006',
-      Nama: 'Sri Rahayu (Mentor)',
-      Role: 'mentor',
-      Region: 'Jawa Barat',
-      Email: 'sri.mentor@email.com',
+      Nama: 'Sri Rahayu (Fasil)',
+      Role: 'fasil',
     },
   ]
 
@@ -447,7 +403,7 @@ export const downloadInterviewerTemplate = () => {
   XLSX.utils.book_append_sheet(wb, ws, 'Interviewer')
 
   // Auto-size columns
-  ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 30 }]
+  ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 12 }]
 
   // Add info sheet dengan penjelasan
   const infoData = [
@@ -456,13 +412,11 @@ export const downloadInterviewerTemplate = () => {
     ['Kolom yang diperlukan:'],
     ['- ID: Identifier unik (contoh: int-001, int-002, int-003)'],
     ['- Nama: Nama lengkap interviewer'],
-    ['- Role: pusat, cabang, atau mentor (LOWERCASE)'],
-    ['- Region: Wilayah/Provinsi'],
-    ['- Email: Email address'],
+    ['- Role: pusat, mitra, atau fasil (LOWERCASE)'],
     [],
     ['Catatan:'],
     ['- Gunakan format ID yang konsisten (int-001, bukan int-01)'],
-    ['- Role HARUS lowercase: pusat, cabang, mentor'],
+    ['- Role HARUS lowercase: pusat, mitra, fasil'],
   ]
 
   const infoWs = XLSX.utils.aoa_to_sheet(infoData)
@@ -599,16 +553,19 @@ export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentDa
         rows.forEach((row, index) => {
           try {
             const id = String(row['ID'] || row['id'] || '').trim()
-            const bagian = String(row['Bagian'] || row['bagian'] || '').trim().toUpperCase()
+            const bagian = String(row['Bagian'] || row['bagian'] || '').trim()
             const aspek = String(row['Aspek'] || row['aspek'] || '').trim()
+            const pertanyaan = String(row['Pertanyaan'] || row['pertanyaan'] || '').trim()
             const indikator = String(row['Indikator'] || row['indikator'] || '').trim()
+            const pilihan = String(row['Pilihan'] !== undefined ? row['Pilihan'] : '').trim()
             const keterangan = String(row['Keterangan'] || row['keterangan'] || '').trim()
 
-            // Validation
-            if (!bagian || !['A', 'B'].includes(bagian)) {
-              errors.push(`Row ${index + 2}: Bagian must be A or B`)
+            // Validate that it starts with A or B
+            if (!bagian.toUpperCase().startsWith('A') && !bagian.toUpperCase().startsWith('B')) {
+              errors.push(`Row ${index + 2}: Bagian must start with A or B`)
               return
             }
+
             if (!aspek) {
               errors.push(`Row ${index + 2}: Aspek is required`)
               return
@@ -623,9 +580,11 @@ export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentDa
 
             instruments.push({
               id: instrId,
-              bagian: bagian as 'A' | 'B',
+              bagian,
               aspek,
+              pertanyaan,
               indikator,
+              pilihan,
               keterangan,
               urutan: index + 1,
             })
@@ -657,24 +616,24 @@ export const downloadScheduleTemplate = () => {
       Wilayah: 'LKT',
       TanggalWawancara: '2026-06-01',
       IDInterviewerPusat: 'int-001',
-      IDInterviewerCabang: 'int-003',
-      IDInterviewerMentor: 'int-005',
+      IDInterviewerMitra: 'int-003',
+      IDInterviewerFasil: 'int-005',
       DaftarKandidat: '001,002,003',
     },
     {
       Wilayah: 'PKB',
       TanggalWawancara: '2026-06-02',
       IDInterviewerPusat: 'int-002',
-      IDInterviewerCabang: 'int-004',
-      IDInterviewerMentor: 'int-006',
+      IDInterviewerMitra: 'int-004',
+      IDInterviewerFasil: 'int-006',
       DaftarKandidat: '004,005',
     },
     {
       Wilayah: 'PDG',
       TanggalWawancara: '2026-06-03',
       IDInterviewerPusat: 'int-001',
-      IDInterviewerCabang: 'int-003',
-      IDInterviewerMentor: 'int-005',
+      IDInterviewerMitra: 'int-003',
+      IDInterviewerFasil: 'int-005',
       DaftarKandidat: '001,002',
     },
   ]
@@ -694,8 +653,8 @@ export const downloadScheduleTemplate = () => {
     ['- Wilayah: Kode wilayah (3 huruf) - lihat tabel mapping di bawah'],
     ['- TanggalWawancara: Format YYYY-MM-DD (contoh: 2026-06-01)'],
     ['- IDInterviewerPusat: ID dari data interviewer dengan role pusat (contoh: int-001)'],
-    ['- IDInterviewerCabang: ID dari data interviewer dengan role cabang (contoh: int-003)'],
-    ['- IDInterviewerMentor: ID dari data interviewer dengan role mentor (contoh: int-005)'],
+    ['- IDInterviewerMitra: ID dari data interviewer dengan role mitra (contoh: int-003)'],
+    ['- IDInterviewerFasil: ID dari data interviewer dengan role fasil (contoh: int-005)'],
     ['- DaftarKandidat: Comma-separated list ID kandidat (contoh: 001,002,003)'],
     [],
     ['MAPPING WILAYAH:'],
@@ -731,38 +690,39 @@ export const downloadInstrumentTemplate = () => {
   const template = [
     {
       ID: 'a1',
-      Bagian: 'A',
-      Aspek: 'Wajib',
-      Indikator: 'Lulus jenjang minimal SMA/sederajat',
-      Keterangan: 'Kandidat telah lulus pendidikan SMA atau sederajat',
-    },
-    {
-      ID: 'a2',
-      Bagian: 'A',
-      Aspek: 'Wajib',
-      Indikator: 'Berusia 17-25 tahun',
-      Keterangan: 'Kandidat masuk dalam rentang usia yang ditentukan',
+      Bagian: 'A. VERIFIKASI DATA SOSIAL-EKONOMI & KELAYAKAN ADMINISTRATIF',
+      Aspek: 'Pendapatan & Tanggungan Keluarga',
+      Pertanyaan: 'Cross-check pendapatan orang tua/wali atau pihak yang menanggung biaya hidup peserta. Berapa total pendapatan bulanan keluarga dan berapa jumlah anggota keluarga yang ditanggung dari pendapatan tersebut?',
+      Indikator: 'Bandingkan nominal yang disebutkan dengan dokumen pendukung (slip gaji/SKTM/surat keterangan RT-RW). Hitung pendapatan per kapita untuk menilai kewajaran klaim ekonomi lemah.',
+      Pilihan: 'Sesuai; Tidak Sesuai',
+      Keterangan: '-',
     },
     {
       ID: 'b1',
-      Bagian: 'B',
-      Aspek: 'Akademik',
-      Indikator: 'Alasan memilih program studi jelas',
-      Keterangan: 'Kandidat dapat menjelaskan alasan pemilihan program studi dengan jelas dan logis',
+      Bagian: 'B. PRESENTASI DIRI, WAWASAN & KEMAMPUAN KOMUNIKASI',
+      Aspek: 'Pemahaman & Kejelasan Tujuan Hidup',
+      Pertanyaan: 'Bagaimana Anda menjelaskan cita-cita Anda dalam jangka pendek (1-2 tahun), menengah (saat kuliah), dan panjang (setelah lulus)? Bagaimana keterkaitan cita-cita tersebut dengan kontribusi Anda pada masyarakat sekitar?',
+      Indikator: 'Mampu menjelaskan cita-cita jangka pendek-menengah-panjang dengan jelas & terencana, serta mengaitkannya dengan kontribusi sosial.',
+      Pilihan: '3',
+      Keterangan: 'Skoring',
     },
     {
       ID: 'b2',
-      Bagian: 'B',
-      Aspek: 'Akademik',
-      Indikator: 'Target karir terukur',
-      Keterangan: 'Kandidat memiliki target karir yang spesifik dan terukur',
+      Bagian: 'B. PRESENTASI DIRI, WAWASAN & KEMAMPUAN KOMUNIKASI',
+      Aspek: 'Pemahaman & Kejelasan Tujuan Hidup',
+      Pertanyaan: 'Bagaimana Anda menjelaskan cita-cita Anda dalam jangka pendek (1-2 tahun), menengah (saat kuliah), dan panjang (setelah lulus)? Bagaimana keterkaitan cita-cita tersebut dengan kontribusi Anda pada masyarakat sekitar?',
+      Indikator: 'Memiliki cita-cita namun belum mengaitkannya dengan kontribusi sosial-masyarakat.',
+      Pilihan: '2',
+      Keterangan: 'Skoring',
     },
     {
-      ID: 'b6',
-      Bagian: 'B',
-      Aspek: 'Bahasa',
-      Indikator: 'Penguasaan bahasa Inggris baik',
-      Keterangan: 'Kandidat menguasai bahasa Inggris dengan baik (lisan & tulis)',
+      ID: 'b3',
+      Bagian: 'B. PRESENTASI DIRI, WAWASAN & KEMAMPUAN KOMUNIKASI',
+      Aspek: 'Pemahaman & Kejelasan Tujuan Hidup',
+      Pertanyaan: 'Bagaimana Anda menjelaskan cita-cita Anda dalam jangka pendek (1-2 tahun), menengah (saat kuliah), dan panjang (setelah lulus)? Bagaimana keterkaitan cita-cita tersebut dengan kontribusi Anda pada masyarakat sekitar?',
+      Indikator: 'Belum memiliki cita-cita yang jelas.',
+      Pilihan: '1',
+      Keterangan: 'Skoring',
     },
   ]
 
@@ -771,22 +731,20 @@ export const downloadInstrumentTemplate = () => {
   XLSX.utils.book_append_sheet(wb, ws, 'Instrumen')
 
   // Auto-size columns
-  ws['!cols'] = [{ wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 35 }, { wch: 50 }]
+  ws['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 25 }, { wch: 45 }, { wch: 45 }, { wch: 15 }, { wch: 15 }]
 
   // Add info sheet
   const infoData = [
-    ['Format Instrumen Wawancara'],
+    ['Format Instrumen Wawancara Baru'],
     [],
     ['Kolom yang diperlukan:'],
-    ['- ID: Identifier unik instrumen (opsional, akan auto-generate jika kosong)'],
-    ['- Bagian: A (Kualifikasi Wajib) atau B (Kualifikasi Pendukung)'],
-    ['- Aspek: Kategori (Akademik, Bahasa, LPDP, Kepribadian, Keluarga, Domisili, Pengalaman, Potensi)'],
-    ['- Indikator: Pertanyaan atau statement yang dinilai'],
-    ['- Keterangan: Penjelasan, rubric, atau deskripsi indikator'],
-    [],
-    ['Catatan:'],
-    ['- Bagian A: Maksimal 8 indikator (Ya/Tidak - semua harus Ya untuk lulus)'],
-    ['- Bagian B: Maksimal 20 indikator (Ya/Ragu/Tidak - di-score 2/1/0)'],
+    ['- ID: Identifier unik instrumen (contoh: a1, b1, b2, dll)'],
+    ['- Bagian: Dimulai dengan "A" (Kualifikasi Wajib) atau "B" (Kualifikasi Pendukung)'],
+    ['- Aspek: Judul/kategori aspek yang dinilai'],
+    ['- Pertanyaan: Deskripsi pertanyaan panduan untuk interviewer'],
+    ['- Indikator: Kriteria penilaian atau deskripsi indikator rubrik'],
+    ['- Pilihan: Untuk Bagian A: Opsi jawaban (dipisahkan titik koma, contoh: Ya; Tidak atau Sesuai; Tidak Sesuai). Untuk Bagian B: Skor (contoh: 3, 2, 1)'],
+    ['- Keterangan: Catatan tambahan atau jenis penanganan logic (contoh: Skoring, dll)'],
   ]
 
   const infoWs = XLSX.utils.aoa_to_sheet(infoData)

@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase'
 
 export interface Instrument {
   id: string
-  bagian: 'A' | 'B'
+  bagian: string
   aspek: string
+  pertanyaan?: string
   indikator: string
+  pilihan?: string
   keterangan?: string
   urutan: number
 }
@@ -17,7 +19,7 @@ interface InstrumentStore {
   bulkAddInstruments: (instruments: Omit<Instrument, 'id'>[]) => Promise<void>
   deleteInstrument: (id: string) => Promise<void>
   updateInstrument: (id: string, instrument: Partial<Instrument>) => Promise<void>
-  getInstrumentsByBagian: (bagian: 'A' | 'B') => Instrument[]
+  getInstrumentsByBagian: (bagian: string) => Instrument[]
   getAspekList: () => string[]
   loadFromSupabase: () => Promise<void>
 }
@@ -47,7 +49,9 @@ export const useInstrumentStore = create<InstrumentStore>((set, get) => ({
         id: item.id,
         bagian: item.bagian,
         aspek: item.aspek,
+        pertanyaan: item.pertanyaan,
         indikator: item.indikator,
+        pilihan: item.pilihan,
         keterangan: item.keterangan,
         urutan: item.urutan,
       }))
@@ -75,7 +79,9 @@ export const useInstrumentStore = create<InstrumentStore>((set, get) => ({
           id: data[0].id,
           bagian: data[0].bagian,
           aspek: data[0].aspek,
+          pertanyaan: data[0].pertanyaan,
           indikator: data[0].indikator,
+          pilihan: data[0].pilihan,
           keterangan: data[0].keterangan,
           urutan: data[0].urutan,
         }
@@ -111,7 +117,9 @@ export const useInstrumentStore = create<InstrumentStore>((set, get) => ({
           id: item.id,
           bagian: item.bagian,
           aspek: item.aspek,
+          pertanyaan: item.pertanyaan,
           indikator: item.indikator,
+          pilihan: item.pilihan,
           keterangan: item.keterangan,
           urutan: item.urutan,
         }))

@@ -33,8 +33,8 @@ export default function JadwalWawancara() {
     regionId: '',
     interviewDate: '',
     pusatId: '',
-    cabangId: '',
-    mentorId: '',
+    mitraId: '',
+    fasilId: '',
     selectedCandidates: [] as string[],
   })
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({})
@@ -104,8 +104,8 @@ export default function JadwalWawancara() {
       regionId,
       interviewDate: '',
       pusatId: '',
-      cabangId: '',
-      mentorId: '',
+      mitraId: '',
+      fasilId: '',
       selectedCandidates: [],
     })
     setFormErrors({})
@@ -118,8 +118,8 @@ export default function JadwalWawancara() {
       regionId: schedule.region_id,
       interviewDate: schedule.interview_date,
       pusatId: schedule.pusat_id || '',
-      cabangId: schedule.cabang_id || '',
-      mentorId: schedule.mentor_id || '',
+      mitraId: schedule.mitra_id || '',
+      fasilId: schedule.fasil_id || '',
       selectedCandidates: schedule.candidate_ids || [],
     })
     setFormErrors({})
@@ -134,8 +134,8 @@ export default function JadwalWawancara() {
       regionId: '',
       interviewDate: '',
       pusatId: '',
-      cabangId: '',
-      mentorId: '',
+      mitraId: '',
+      fasilId: '',
       selectedCandidates: [],
     })
     setFormErrors({})
@@ -147,8 +147,8 @@ export default function JadwalWawancara() {
     if (!formData.regionId) errors.regionId = 'Wilayah harus dipilih'
     if (!formData.interviewDate) errors.interviewDate = 'Tanggal wawancara harus diisi'
     if (!formData.pusatId) errors.pusatId = 'Interviewer Pusat harus dipilih'
-    if (!formData.cabangId) errors.cabangId = 'Interviewer Cabang harus dipilih'
-    if (!formData.mentorId) errors.mentorId = 'Interviewer Mentor harus dipilih'
+    if (!formData.mitraId) errors.mitraId = 'Interviewer Mitra harus dipilih'
+    if (!formData.fasilId) errors.fasilId = 'Interviewer Fasil harus dipilih'
     if (formData.selectedCandidates.length === 0) errors.candidates = 'Minimal 1 kandidat harus dipilih'
 
     setFormErrors(errors)
@@ -166,8 +166,8 @@ export default function JadwalWawancara() {
           region_id: formData.regionId,
           interview_date: formData.interviewDate,
           pusat_id: formData.pusatId || undefined,
-          cabang_id: formData.cabangId || undefined,
-          mentor_id: formData.mentorId || undefined,
+          mitra_id: formData.mitraId || undefined,
+          fasil_id: formData.fasilId || undefined,
           candidate_ids: formData.selectedCandidates,
         })
         setToast({ message: 'Jadwal berhasil diperbarui', type: 'success' })
@@ -177,8 +177,8 @@ export default function JadwalWawancara() {
           region_id: formData.regionId,
           interview_date: formData.interviewDate,
           pusat_id: formData.pusatId || undefined,
-          cabang_id: formData.cabangId || undefined,
-          mentor_id: formData.mentorId || undefined,
+          mitra_id: formData.mitraId || undefined,
+          fasil_id: formData.fasilId || undefined,
           status: 'belum',
           candidate_ids: formData.selectedCandidates,
         })
@@ -190,6 +190,54 @@ export default function JadwalWawancara() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const getFilteredCandidates = () => {
+    if (!formData.regionId) return []
+
+    const selectedRegion = regions.find((r) => r.id === formData.regionId)
+    if (!selectedRegion) return []
+
+    const regionNameUpper = selectedRegion.name.toUpperCase()
+    const regionCodeUpper = (selectedRegion.code || '').toUpperCase()
+
+    // Mapping region name to school name
+    const regionToSchool: Record<string, string> = {
+      'DI YOGYAKARTA': 'UNIVERSITAS GADJAH MADA',
+      'PALU': 'UNIVERSITAS TADULAKO',
+      'AMBON': 'UNIVERSITAS PATTIMURA',
+      'JAMBI': 'UNIVERSITAS JAMBI',
+      'PADANG': 'UNIVERSITAS ANDALAS',
+    }
+
+    const targetSchool = regionToSchool[regionNameUpper] || ''
+
+    // Collect all candidate IDs already scheduled in other schedules
+    const scheduledCandidateIds = new Set<string>()
+    allSchedules.forEach((sch) => {
+      // If editing, skip the current schedule's candidates
+      if (showEditModal && editingScheduleId === sch.id) return
+      if (sch.candidate_ids) {
+        sch.candidate_ids.forEach((id) => scheduledCandidateIds.add(id))
+      }
+    })
+
+    return candidates.filter((candidate) => {
+      // Always show if already selected in the form/modal state
+      if (formData.selectedCandidates.includes(candidate.id)) return true
+
+      // If already scheduled in another schedule, hide
+      if (scheduledCandidateIds.has(candidate.id)) return false
+
+      const candidateRegionUpper = (candidate.region || '').toUpperCase()
+      const candidateSchoolUpper = (candidate.school || '').toUpperCase()
+
+      return (
+        candidateRegionUpper === regionNameUpper ||
+        candidateRegionUpper === regionCodeUpper ||
+        (targetSchool && candidateSchoolUpper.includes(targetSchool))
+      )
+    })
   }
 
   const handleCandidateToggle = (candidateId: string): void => {
@@ -324,15 +372,15 @@ export default function JadwalWawancara() {
                           </p>
                         </div>
                         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                          <p className="text-xs font-semibold text-green-800 mb-1">Cabang</p>
+                          <p className="text-xs font-semibold text-green-800 mb-1">Mitra</p>
                           <p className="text-sm font-medium text-gray-900">
-                            {getInterviewerName(schedule.cabang_id)}
+                            {getInterviewerName(schedule.mitra_id)}
                           </p>
                         </div>
                         <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                          <p className="text-xs font-semibold text-purple-800 mb-1">Mentor</p>
+                          <p className="text-xs font-semibold text-purple-800 mb-1">Fasil</p>
                           <p className="text-sm font-medium text-gray-900">
-                            {getInterviewerName(schedule.mentor_id)}
+                            {getInterviewerName(schedule.fasil_id)}
                           </p>
                         </div>
                       </div>
@@ -476,55 +524,55 @@ export default function JadwalWawancara() {
                   )}
                 </div>
 
-                {/* Cabang */}
+                {/* Mitra */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Interviewer Cabang <span className="text-red-500">*</span>
+                    Interviewer Mitra <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.cabangId}
-                    onChange={(e) => setFormData({ ...formData, cabangId: e.target.value })}
+                    value={formData.mitraId}
+                    onChange={(e) => setFormData({ ...formData, mitraId: e.target.value })}
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.cabangId ? 'border-red-500' : 'border-gray-300'
+                      formErrors.mitraId ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
                     <option value="">-- Pilih --</option>
                     {interviewers
-                      .filter((i) => i.role === 'cabang')
+                      .filter((i) => i.role === 'mitra')
                       .map((interviewer) => (
                         <option key={interviewer.id} value={interviewer.id}>
                           {interviewer.full_name}
                         </option>
                       ))}
                   </select>
-                  {formErrors.cabangId && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.cabangId}</p>
+                  {formErrors.mitraId && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.mitraId}</p>
                   )}
                 </div>
 
-                {/* Mentor */}
+                {/* Fasil */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Interviewer Mentor <span className="text-red-500">*</span>
+                    Interviewer Fasil <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.mentorId}
-                    onChange={(e) => setFormData({ ...formData, mentorId: e.target.value })}
+                    value={formData.fasilId}
+                    onChange={(e) => setFormData({ ...formData, fasilId: e.target.value })}
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.mentorId ? 'border-red-500' : 'border-gray-300'
+                      formErrors.fasilId ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
                     <option value="">-- Pilih --</option>
                     {interviewers
-                      .filter((i) => i.role === 'mentor')
+                      .filter((i) => i.role === 'fasil')
                       .map((interviewer) => (
                         <option key={interviewer.id} value={interviewer.id}>
                           {interviewer.full_name}
                         </option>
                       ))}
                   </select>
-                  {formErrors.mentorId && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.mentorId}</p>
+                  {formErrors.fasilId && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.fasilId}</p>
                   )}
                 </div>
               </div>
@@ -535,11 +583,15 @@ export default function JadwalWawancara() {
                   Daftar Kandidat <span className="text-red-500">*</span>
                 </label>
                 <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
-                  {candidates.length === 0 ? (
-                    <p className="text-gray-600 text-sm">Belum ada kandidat yang tersedia</p>
+                  {getFilteredCandidates().length === 0 ? (
+                    <p className="text-gray-500 text-sm italic">
+                      {!formData.regionId
+                        ? 'Harap pilih wilayah terlebih dahulu'
+                        : 'Tidak ada kandidat tersedia untuk wilayah ini'}
+                    </p>
                   ) : (
                     <div className="space-y-2">
-                      {candidates.map((candidate) => (
+                      {getFilteredCandidates().map((candidate) => (
                         <div key={candidate.id} className="flex items-center">
                           <input
                             type="checkbox"
@@ -553,7 +605,7 @@ export default function JadwalWawancara() {
                             className="ml-3 flex-1 cursor-pointer text-sm text-gray-900"
                           >
                             {candidate.id} - {candidate.full_name}
-                            <span className="text-gray-600 ml-2">({candidate.school})</span>
+                            <span className="text-gray-500 ml-2">({candidate.school} • {candidate.region})</span>
                           </label>
                         </div>
                       ))}
