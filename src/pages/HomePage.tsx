@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 
-const ADMIN_PASSWORD = 'yes123'
+const ADMIN_PASSWORD = 'etos123'
 
 export default function HomePage() {
   const navigate = useNavigate()
