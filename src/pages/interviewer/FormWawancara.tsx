@@ -124,8 +124,10 @@ export default function FormWawancara() {
     if (bagian.includes('MOTIVASI')) return 'Motivasi (B.2)'
     if (bagian.includes('NILAI')) return 'Karakter (B.3)'
     if (bagian.includes('KESIAPAN HIDUP')) return 'Kesiapan (B.4)'
+    if (bagian.startsWith('C') || bagian.includes('KOMITMEN')) return 'Komitmen (C)'
     return bagian.replace(/^[A-Z]\.\s+/, '')
   }
+
 
   const steps = [
     ...sections.map((sec, idx) => ({
