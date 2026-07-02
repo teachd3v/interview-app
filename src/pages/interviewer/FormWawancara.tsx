@@ -483,9 +483,15 @@ export default function FormWawancara() {
 
                             <div className="space-y-4">
                               {indicators.map((indicator) => {
-                                const isUkt = indicator.pilihan === '-';
-                                const options = isUkt ? [] : (indicator.pilihan || 'Ya; Tidak').split(';').map(o => o.trim());
-                                const isStandardBoolean = options.length === 2 && (options.includes('Ya') || options.includes('Sesuai'));
+                                 const isUkt = indicator.pilihan === '-';
+                                 const isA8 = indicator.id === 'a8' || indicator.pertanyaan?.toLowerCase().includes('bantuan/beasiswa') || indicator.label?.toLowerCase().includes('bantuan/beasiswa');
+                                 const options = isUkt ? [] : (isA8 ? [
+                                   'Ya, Diterima Beasiswa',
+                                   'Ya, Sedang Mendaftar Beasiswa',
+                                   'Tidak Mendaftar dan Menerima Beasiswa'
+                                 ] : (indicator.pilihan || 'Ya; Tidak').split(';').map(o => o.trim()));
+                                 const isStandardBoolean = !isA8 && options.length === 2 && (options.includes('Ya') || options.includes('Sesuai'));
+
 
                                 return (
                                   <div key={indicator.id} className="p-4 bg-gray-50 rounded-xl border border-gray-150">

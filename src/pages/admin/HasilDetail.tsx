@@ -381,9 +381,15 @@ export default function HasilDetail() {
                       item.label?.toLowerCase().includes('ukt') ||
                       item.aspect?.toLowerCase().includes('besaran ukt')
                     
-                    const options = isUktItem ? [] : (item.pilihan || 'Ya; Tidak').split(';').map((o: any) => o.trim());
-                    const isStandardBoolean = options.length === 2 && (options.includes('Ya') || options.includes('Sesuai'));
-                    const displayValue = getValueLabel(item.value, item.pilihan)
+                    const isA8 = item.id === 'a8' || item.pertanyaan?.toLowerCase().includes('bantuan/beasiswa') || item.label?.toLowerCase().includes('bantuan/beasiswa');
+                    const options = isUktItem ? [] : (isA8 ? [
+                      'Ya, Diterima Beasiswa',
+                      'Ya, Sedang Mendaftar Beasiswa',
+                      'Tidak Mendaftar dan Menerima Beasiswa'
+                    ] : (item.pilihan || 'Ya; Tidak').split(';').map((o: any) => o.trim()));
+                    const isStandardBoolean = !isA8 && options.length === 2 && (options.includes('Ya') || options.includes('Sesuai'));
+                    const displayValue = getValueLabel(item.value, isA8 ? 'Ya, Diterima Beasiswa;Ya, Sedang Mendaftar Beasiswa;Tidak Mendaftar dan Menerima Beasiswa' : item.pilihan)
+
 
                     return (
                       <div

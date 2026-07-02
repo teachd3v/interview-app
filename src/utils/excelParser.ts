@@ -560,11 +560,13 @@ export const parseInstrumentExcelFile = (file: File): Promise<ParsedInstrumentDa
             const pilihan = String(row['Pilihan'] !== undefined ? row['Pilihan'] : '').trim()
             const keterangan = String(row['Keterangan'] || row['keterangan'] || '').trim()
 
-            // Validate that it starts with A or B
-            if (!bagian.toUpperCase().startsWith('A') && !bagian.toUpperCase().startsWith('B')) {
-              errors.push(`Row ${index + 2}: Bagian must start with A or B`)
+            // Validate that it starts with A, B or C
+            const bagianUpper = bagian.toUpperCase()
+            if (!bagianUpper.startsWith('A') && !bagianUpper.startsWith('B') && !bagianUpper.startsWith('C')) {
+              errors.push(`Row ${index + 2}: Bagian must start with A, B, or C`)
               return
             }
+
 
             if (!aspek) {
               errors.push(`Row ${index + 2}: Aspek is required`)
