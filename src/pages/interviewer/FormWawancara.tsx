@@ -27,7 +27,8 @@ export default function FormWawancara() {
 
   // Timer state
   const [timerStarted, setTimerStarted] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(20 * 60) // 20 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60) // 15 minutes in seconds
+
 
   const {
     partA,
@@ -93,12 +94,13 @@ export default function FormWawancara() {
       }, 1000)
     } else if (timeRemaining === 0 && timerStarted) {
       setToast({
-        message: 'Waktu 20 menit telah habis!',
+        message: 'Waktu 15 menit telah habis!',
         type: 'warning',
       })
     }
     return () => clearInterval(interval)
   }, [timerStarted, timeRemaining])
+
 
   const candidate = candidates.find((c) => c.id === candidateId)
 
@@ -116,17 +118,31 @@ export default function FormWawancara() {
   if (!candidate) return null
 
   // Get all unique sections from instruments (e.g. A. VERIFIKASI..., B. PRESENTASI...)
-  const sections = [...new Set(instruments.map((i) => i.bagian))].sort()
+  const getSectionSortWeight = (secName: string) => {
+    const name = secName.toUpperCase();
+    if (name.startsWith('A')) return 1;
+    if (name.includes('KESIAPAN HIDUP') || name.includes('FINANSIAL')) return 2; // Kesiapan (B.1)
+    if (name.includes('MOTIVASI') || name.includes('POTENSI')) return 3;       // Motivasi (B.2)
+    if (name.includes('NILAI') || name.includes('KARAKTER')) return 4;         // Karakter (B.3)
+    if (name.includes('PRESENTASI DIRI') || name.includes('KOMUNIKASI')) return 5; // Komunikasi (B.4)
+    if (name.startsWith('C') || name.includes('KOMITMEN')) return 6;           // Komitmen (C)
+    return 99;
+  }
+
+  const sections = [...new Set(instruments.map((i) => i.bagian))].sort((a, b) => {
+    return getSectionSortWeight(a) - getSectionSortWeight(b);
+  })
 
   const getShortTitle = (bagian: string) => {
     if (bagian.startsWith('A')) return 'Wajib (A)'
-    if (bagian.includes('PRESENTASI DIRI')) return 'Komunikasi (B.1)'
-    if (bagian.includes('MOTIVASI')) return 'Motivasi (B.2)'
-    if (bagian.includes('NILAI')) return 'Karakter (B.3)'
-    if (bagian.includes('KESIAPAN HIDUP')) return 'Kesiapan (B.4)'
+    if (bagian.includes('KESIAPAN HIDUP') || bagian.includes('FINANSIAL')) return 'Kesiapan (B.1)'
+    if (bagian.includes('MOTIVASI') || bagian.includes('POTENSI')) return 'Motivasi (B.2)'
+    if (bagian.includes('NILAI') || bagian.includes('KARAKTER')) return 'Karakter (B.3)'
+    if (bagian.includes('PRESENTASI DIRI') || bagian.includes('KOMUNIKASI')) return 'Komunikasi (B.4)'
     if (bagian.startsWith('C') || bagian.includes('KOMITMEN')) return 'Komitmen (C)'
     return bagian.replace(/^[A-Z]\.\s+/, '')
   }
+
 
 
   const steps = [
@@ -375,21 +391,32 @@ export default function FormWawancara() {
               <div className={`text-3xl font-bold font-mono ${timeRemaining <= 300 && timerStarted ? 'text-red-600' : 'text-blue-600'}`}>
                 ⏱️ {formatTime(timeRemaining)}
               </div>
-              {!timerStarted ? (
+              <div className="flex gap-2">
+                {!timerStarted ? (
+                  <button
+                    onClick={() => setTimerStarted(true)}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs"
+                  >
+                    Mulai
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setTimerStarted(false)}
+                    className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg text-xs"
+                  >
+                    Pause
+                  </button>
+                )}
                 <button
-                  onClick={() => setTimerStarted(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm"
+                  onClick={() => {
+                    setTimerStarted(false);
+                    setTimeRemaining(15 * 60);
+                  }}
+                  className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg text-xs border border-gray-350"
                 >
-                  Mulai
+                  Reset
                 </button>
-              ) : (
-                <button
-                  onClick={() => setTimerStarted(false)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-sm"
-                >
-                  Pause
-                </button>
-              )}
+              </div>
             </div>
             <button
               onClick={() => navigate('/interviewer')}
