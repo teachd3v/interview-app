@@ -14,8 +14,13 @@ export default function HasilDetail() {
   const updateNotes = useFormResultsStore((state) => state.updateNotes)
   const loadResults = useFormResultsStore((state) => state.loadFromSupabase)
 
-  const [isEditingNotes, setIsEditingNotes] = useState(false)
-  const [editedNotes, setEditedNotes] = useState('')
+  const updateResult = useFormResultsStore((state) => state.updateResult)
+
+  const [isEditingAll, setIsEditingAll] = useState(false)
+  const [editedPartA, setEditedPartA] = useState<any[]>([])
+  const [editedPartB, setEditedPartB] = useState<any[]>([])
+  const [editedUkt, setEditedUkt] = useState('')
+  const [editedAspectNotes, setEditedAspectNotes] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (results.length === 0) {
@@ -25,17 +30,26 @@ export default function HasilDetail() {
 
   const result = results.find((r) => r.id === resultId)
 
+  const [isEditingNotes, setIsEditingNotes] = useState(false)
+  const [editedNotes, setEditedNotes] = useState('')
+
   useEffect(() => {
     if (result) {
-      setEditedNotes(result.notes)
+      setEditedNotes(result.notes || '')
+      setEditedPartA(JSON.parse(JSON.stringify(result.partA || [])))
+      setEditedPartB(JSON.parse(JSON.stringify(result.partB || [])))
+      
+      const { uktValue, aspectNotes } = parseNotes(result.notes || '')
+      setEditedUkt(uktValue)
+      setEditedAspectNotes(aspectNotes)
     }
-  }, [result])
+  }, [result, isEditingAll])
 
   if (!result) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-xl font-semibold text-gray-600 mb-4">Data hasil tidak ditemukan</p>
+          <p className="text-xl font-semibold text-gray-600 mb-4">Loading atau data hasil tidak ditemukan...</p>
           <button
             onClick={() => navigate(-1)}
             className="text-blue-600 font-bold hover:underline"
@@ -53,6 +67,101 @@ export default function HasilDetail() {
   const handleSaveNotes = async () => {
     await updateNotes(result.id, editedNotes)
     setIsEditingNotes(false)
+  }
+
+
+  const handleSaveAll = async () => {
+    // 1. Recalculate UKT and Aspect Notes inside notes string
+    let newNotes = ''
+    if (editedUkt) {
+      newNotes += `[UKT: ${editedUkt}]\n\n`
+    }
+    Object.entries(editedAspectNotes).forEach(([asp, note]) => {
+      if (note.trim()) {
+        newNotes += `[Aspek: ${asp}]\n${note.trim()}\n\n`
+      }
+    })
+    
+    // Append full interviewer notes (without format headings)
+    const rawCleanNotes = editedNotes.replace(/^\[UKT:[^\]]+\]\s*/g, '').replace(/\[Aspek:[^\]]+\]\n[\s\S]*?(?=\n\[Aspek:|$)/g, '').trim()
+    if (rawCleanNotes) {
+      newNotes += rawCleanNotes
+    }
+
+    // 2. Map partA: make sure edited textValue for UKT matches editedUkt
+    const finalPartA = editedPartA.map((item) => {
+      const isUktItem =
+        item.pertanyaan?.toLowerCase().includes('ukt') ||
+        item.label?.toLowerCase().includes('ukt') ||
+        item.aspect?.toLowerCase().includes('besaran ukt')
+      return {
+        ...item,
+        textValue: isUktItem ? editedUkt : item.textValue
+      }
+    })
+
+    // 3. Recalculate Part B Total and Percentage
+    const partBScores = editedPartB.map((item) => {
+      let score = 0
+      const optionScore = parseInt(item.pilihan || '')
+      if (!isNaN(optionScore)) {
+        score = item.value === 'yes' ? optionScore : 0
+      } else {
+        score = item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0
+      }
+      return { ...item, score }
+    })
+
+    // Calculate maximum score dynamically based on questions
+    const partBGroups = new Map<string, typeof editedPartB>()
+    editedPartB.forEach((item) => {
+      const q = item.pertanyaan || ''
+      if (!partBGroups.has(q)) partBGroups.set(q, [])
+      partBGroups.get(q)!.push(item)
+    })
+
+    let maxPartBScore = 0
+    partBGroups.forEach((options) => {
+      const optionMax = Math.max(
+        ...options.map((opt) => {
+          const scoreNum = parseInt(opt.pilihan || '')
+          return !isNaN(scoreNum) ? scoreNum : 2
+        })
+      )
+      maxPartBScore += optionMax
+    })
+
+    const partBTotal = partBScores.reduce((sum, item) => sum + (item.score || 0), 0)
+    const partBPercentage = maxPartBScore > 0 ? (partBTotal / maxPartBScore) * 100 : 0
+
+    // 4. Save to supabase via store
+    await updateResult(result.id, {
+      partA: finalPartA,
+      partB: partBScores,
+      notes: newNotes,
+      partAPass: true, // No absolute fail
+      partBTotal,
+      partBPercentage
+    })
+
+    setIsEditingAll(false)
+  }
+
+  // Helper toggle handlers for editing
+  const handleEditPartAChange = (id: string, val: any) => {
+    setEditedPartA(prev => prev.map(i => i.id === id ? { ...i, value: val } : i))
+  }
+
+  const handleEditPartBChange = (id: string) => {
+    const target = editedPartB.find(i => i.id === id)
+    if (!target) return
+    const q = target.pertanyaan || ''
+    setEditedPartB(prev => prev.map(i => {
+      if (i.pertanyaan === q) {
+        return { ...i, value: i.id === id ? 'yes' : 'no' }
+      }
+      return i
+    }))
   }
 
   // ---- Parse Notes untuk catatan per aspek ----
@@ -76,7 +185,8 @@ export default function HasilDetail() {
   const { uktValue, aspectNotes } = parseNotes(result.notes || '')
 
   // ---- Kelompokkan partA per aspek/pertanyaan ----
-  const partAByAspect = (result.partA as any[]).reduce((acc, item) => {
+  const currentPartA = isEditingAll ? editedPartA : (result.partA as any[])
+  const partAByAspect = currentPartA.reduce((acc, item) => {
     const key = item.pertanyaan || 'Verifikasi Umum'
     if (!acc[key]) acc[key] = []
     acc[key].push(item)
@@ -84,7 +194,8 @@ export default function HasilDetail() {
   }, {} as Record<string, any[]>)
 
   // ---- Kelompokkan partB per bagian → aspek → pertanyaan ----
-  const partBByBagian = (result.partB as any[]).reduce((acc, item) => {
+  const currentPartB = isEditingAll ? editedPartB : (result.partB as any[])
+  const partBByBagian = currentPartB.reduce((acc, item) => {
     const bagian = item.bagian || 'Evaluasi'
     if (!acc[bagian]) acc[bagian] = {}
     const aspect = item.aspect || 'Umum'
@@ -126,6 +237,12 @@ export default function HasilDetail() {
     return bagian
   }
 
+  const formatRupiah = (val: string) => {
+    const clean = val.replace(/\D/g, '')
+    if (!clean) return ''
+    return new Intl.NumberFormat('id-ID').format(parseInt(clean))
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
@@ -135,12 +252,39 @@ export default function HasilDetail() {
             <h1 className="text-xl font-bold text-gray-900">Detail Hasil Wawancara</h1>
             <p className="text-xs text-gray-400 mt-0.5">ID: {result.id}</p>
           </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
-          >
-            ← Kembali
-          </button>
+          <div className="flex gap-3">
+            {isEditingAll ? (
+              <>
+                <button
+                  onClick={() => setIsEditingAll(false)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveAll}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  Simpan Semua Edit
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditingAll(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  ✏️ Edit Semua Data
+                </button>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  ← Kembali
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -156,11 +300,25 @@ export default function HasilDetail() {
               <p><span className="font-semibold">Prodi:</span> {candidate?.major || '-'}</p>
               <p><span className="font-semibold">Jenis Kelamin:</span> {candidate?.gender || '-'}</p>
               <p><span className="font-semibold">Wilayah:</span> {candidate?.region || '-'}</p>
-              {uktValue && (
-                <p className="mt-2 pt-2 border-t border-dashed">
-                  <span className="font-semibold">UKT:</span>{' '}
-                  <span className="text-blue-700 font-bold">{uktValue}</span>
-                </p>
+              
+              {isEditingAll ? (
+                <div className="mt-2 pt-2 border-t border-dashed flex items-center gap-2">
+                  <span className="font-semibold text-xs text-gray-700">Edit UKT: Rp</span>
+                  <input
+                    type="text"
+                    value={editedUkt}
+                    onChange={(e) => setEditedUkt(formatRupiah(e.target.value))}
+                    className="px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 bg-white outline-none w-36 font-semibold"
+                    placeholder="Nilai UKT..."
+                  />
+                </div>
+              ) : (
+                uktValue && (
+                  <p className="mt-2 pt-2 border-t border-dashed">
+                    <span className="font-semibold">UKT:</span>{' '}
+                    <span className="text-blue-700 font-bold">{uktValue}</span>
+                  </p>
+                )
               )}
             </div>
           </div>
@@ -179,10 +337,10 @@ export default function HasilDetail() {
         <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Ringkasan Hasil</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className={`rounded-xl p-4 ${result.partAPass ? 'bg-green-800/60' : 'bg-red-900/60'}`}>
+            <div className={`rounded-xl p-4 bg-green-800/60`}>
               <p className="text-[10px] text-gray-300 uppercase font-semibold tracking-wider">Status Kelayakan Wajib</p>
-              <p className={`text-xl font-black mt-1 ${result.partAPass ? 'text-green-300' : 'text-red-400'}`}>
-                {result.partAPass ? 'LULUS VERIFIKASI' : 'TIDAK LAYAK (FAIL)'}
+              <p className={`text-xl font-black mt-1 text-green-300`}>
+                LULUS VERIFIKASI
               </p>
             </div>
             <div className="bg-gray-800 rounded-xl p-4">
@@ -209,61 +367,110 @@ export default function HasilDetail() {
             <p className="text-blue-100 text-xs mt-0.5">Pengecekan kelayakan dasar kandidat</p>
           </div>
           <div className="p-6 space-y-6">
-            {(Object.entries(partAByAspect) as [string, any[]][]).map(([pertanyaan, indicators]) => (
-              <div key={pertanyaan}>
-                {pertanyaan !== 'Verifikasi Umum' && (
+            {(Object.entries(partAByAspect) as [string, any[]][]).map(([pertanyaanName, indicators]) => (
+              <div key={pertanyaanName}>
+                {pertanyaanName !== 'Verifikasi Umum' && (
                   <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3 border-l-4 border-blue-400 pl-3">
-                    {pertanyaan}
+                    {pertanyaanName}
                   </h3>
                 )}
                 <div className="space-y-2">
                   {indicators.map((item: any) => {
-                    const isA8Fail = item.id === 'a8' && item.value === true
+                    const isUktItem =
+                      item.pertanyaan?.toLowerCase().includes('ukt') ||
+                      item.label?.toLowerCase().includes('ukt') ||
+                      item.aspect?.toLowerCase().includes('besaran ukt')
+                    
+                    const options = isUktItem ? [] : (item.pilihan || 'Ya; Tidak').split(';').map((o: any) => o.trim());
+                    const isStandardBoolean = options.length === 2 && (options.includes('Ya') || options.includes('Sesuai'));
                     const displayValue = getValueLabel(item.value, item.pilihan)
+
                     return (
                       <div
                         key={item.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border ${
-                          isA8Fail
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-gray-50 border-gray-100'
-                        }`}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-3 rounded-lg border bg-gray-50 border-gray-100 gap-2"
                       >
                         <div>
                           {item.pertanyaan && (
                             <span className="block text-[10px] font-bold text-gray-500 mb-0.5">{item.pertanyaan}</span>
                           )}
                           <span className="text-sm text-gray-700">{item.label}</span>
-                          {isA8Fail && (
-                            <span className="ml-2 text-[10px] font-bold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
-                              ⚠ Penyebab Gugur
-                            </span>
-                          )}
                         </div>
-                        <div className="text-right ml-4 shrink-0">
-                          {/* Teks value / pilihan ganda */}
-                          {item.textValue ? (
-                            <span className="text-sm font-bold text-blue-700">{item.textValue}</span>
-                          ) : Array.isArray(item.value) ? (
-                            <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
-                              {item.value.map((v: string) => (
-                                <span key={v} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">{v}</span>
-                              ))}
-                            </div>
+
+                        <div className="text-right shrink-0">
+                          {isEditingAll ? (
+                            isUktItem ? (
+                              <div className="flex gap-1 items-center justify-end">
+                                <span className="text-xs text-gray-500 font-semibold">Rp</span>
+                                <input
+                                  type="text"
+                                  value={editedUkt}
+                                  onChange={(e) => {
+                                    const formatted = formatRupiah(e.target.value)
+                                    setEditedUkt(formatted)
+                                    handleEditPartAChange(item.id, formatted)
+                                  }}
+                                  className="px-2 py-1 border border-gray-300 rounded text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-32 font-bold text-blue-700"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex gap-1.5 justify-end">
+                                {options.map((opt: string) => {
+                                  let isSelected = false
+                                  let onClick = () => {}
+                                  let btnColor = 'bg-blue-600 text-white'
+
+                                  if (isStandardBoolean) {
+                                    const isPositive = opt !== 'Tidak' && opt !== 'Tidak Sesuai'
+                                    isSelected = item.value === isPositive
+                                    onClick = () => handleEditPartAChange(item.id, isPositive)
+                                    btnColor = isPositive ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                                  } else {
+                                    isSelected = item.value === opt
+                                    onClick = () => handleEditPartAChange(item.id, opt)
+                                    btnColor = 'bg-blue-600 text-white'
+                                  }
+
+                                  return (
+                                    <button
+                                      key={opt}
+                                      onClick={onClick}
+                                      className={`px-3 py-1 text-xs font-semibold rounded ${
+                                        isSelected ? btnColor : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                      }`}
+                                    >
+                                      {opt}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )
                           ) : (
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              displayValue.color === 'text-green-700'
-                                ? 'bg-green-100 text-green-700'
-                                : displayValue.color === 'text-red-600'
-                                ? 'bg-red-100 text-red-700'
-                                : displayValue.color === 'text-blue-700'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {displayValue.label}
-                            </span>
+                            /* Teks value / pilihan ganda (View mode) */
+                            item.textValue ? (
+                              <span className="text-sm font-bold text-blue-700">Rp {item.textValue}</span>
+                            ) : Array.isArray(item.value) ? (
+                              <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
+                                {item.value.map((v: string) => (
+                                  <span key={v} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">{v}</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                displayValue.color === 'text-green-700'
+                                  ? 'bg-green-100 text-green-700'
+                                  : displayValue.color === 'text-red-600'
+                                  ? 'bg-red-100 text-red-700'
+                                  : displayValue.color === 'text-blue-700'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {displayValue.label}
+                              </span>
+                            )
                           )}
                         </div>
+
                       </div>
                     )
                   })}
@@ -284,7 +491,7 @@ export default function HasilDetail() {
                 </div>
                 <div className="p-6 space-y-6">
                   {Object.entries(aspectMap).map(([aspect, questionMap]: [string, any]) => {
-                    const aspectNote = aspectNotes[aspect]
+                    const aspectNote = isEditingAll ? (editedAspectNotes[aspect] || '') : (aspectNotes[aspect] || '')
                     return (
                       <div key={aspect} className="border border-gray-100 rounded-xl overflow-hidden">
                         {/* Aspek Header */}
@@ -316,7 +523,10 @@ export default function HasilDetail() {
                                   return (
                                     <div
                                       key={item.id}
+                                      onClick={() => isEditingAll && handleEditPartBChange(item.id)}
                                       className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                                        isEditingAll ? 'cursor-pointer hover:border-blue-400' : ''
+                                      } ${
                                         isSelected
                                           ? 'bg-green-50 border border-green-200'
                                           : 'bg-gray-50 border border-gray-100 opacity-60'
@@ -346,11 +556,21 @@ export default function HasilDetail() {
                         </div>
 
                         {/* Catatan aspek */}
-                        {aspectNote && (
+                        {(isEditingAll || aspectNote) && (
                           <div className="px-4 pb-4 pt-0">
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                               <p className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider mb-1">📝 Catatan Aspek ini</p>
-                              <p className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{aspectNote}</p>
+                              {isEditingAll ? (
+                                <textarea
+                                  value={aspectNote}
+                                  onChange={(e) => setEditedAspectNotes(prev => ({ ...prev, [aspect]: e.target.value }))}
+                                  className="w-full p-2 border border-yellow-300 rounded text-xs bg-white focus:ring-1 focus:ring-yellow-500 outline-none resize-none font-sans"
+                                  rows={2}
+                                  placeholder="Tambahkan catatan khusus aspek ini..."
+                                />
+                              ) : (
+                                <p className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{aspectNote}</p>
+                              )}
                             </div>
                           </div>
                         )}
@@ -367,36 +587,45 @@ export default function HasilDetail() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4 border-b pb-3">
             <h2 className="text-base font-bold text-gray-900">📋 Catatan Lengkap Interviewer</h2>
-            {!isEditingNotes ? (
-              <button
-                onClick={() => setIsEditingNotes(true)}
-                className="text-blue-600 text-sm font-bold hover:underline flex items-center gap-1"
-              >
-                ✏️ Edit
-              </button>
-            ) : (
-              <div className="flex gap-3">
+            {!isEditingAll && (
+              !isEditingNotes ? (
                 <button
-                  onClick={() => setIsEditingNotes(false)}
-                  className="text-gray-500 text-sm font-bold hover:underline"
+                  onClick={() => setIsEditingNotes(true)}
+                  className="text-blue-600 text-sm font-bold hover:underline flex items-center gap-1"
                 >
-                  Batal
+                  ✏️ Edit Catatan Akhir
                 </button>
-                <button
-                  onClick={handleSaveNotes}
-                  className="text-green-600 text-sm font-bold hover:underline"
-                >
-                  Simpan
-                </button>
-              </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsEditingNotes(false)}
+                    className="text-gray-500 text-sm font-bold hover:underline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSaveNotes}
+                    className="text-green-600 text-sm font-bold hover:underline"
+                  >
+                    Simpan
+                  </button>
+                </div>
+              )
             )}
           </div>
 
-          {isEditingNotes ? (
+          {isEditingAll ? (
             <textarea
               value={editedNotes}
               onChange={(e) => setEditedNotes(e.target.value)}
-              className="w-full p-4 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-48 text-sm"
+              className="w-full p-4 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-32 text-sm bg-white"
+              placeholder="Tulis catatan lengkap..."
+            />
+          ) : isEditingNotes ? (
+            <textarea
+              value={editedNotes}
+              onChange={(e) => setEditedNotes(e.target.value)}
+              className="w-full p-4 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-32 text-sm"
               placeholder="Tulis catatan lengkap..."
             />
           ) : (
@@ -410,3 +639,4 @@ export default function HasilDetail() {
     </div>
   )
 }
+

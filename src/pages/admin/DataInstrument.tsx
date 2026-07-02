@@ -4,7 +4,7 @@ import { useInstrumentStore, Instrument } from '../../store/instrumentStore'
 import { parseInstrumentExcelFile, parseInstrumentCSVFile, downloadInstrumentTemplate } from '../../utils/excelParser'
 
 export default function DataInstrument() {
-  const [filterBagian, setFilterBagian] = useState<'A' | 'B' | ''>('')
+  const [filterBagian, setFilterBagian] = useState<'A' | 'B' | 'C' | ''>('')
   const [filterAspek, setFilterAspek] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -23,10 +23,11 @@ export default function DataInstrument() {
   }, [])
 
   const filteredInstruments = instruments.filter((i) => {
-    if (filterBagian && !i.bagian.startsWith(filterBagian)) return false
+    if (filterBagian && !i.bagian.toUpperCase().startsWith(filterBagian)) return false
     if (filterAspek && i.aspek !== filterAspek) return false
     return true
   })
+
 
   const aspekList = getAspekList()
 
@@ -142,12 +143,13 @@ export default function DataInstrument() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Bagian</label>
             <select
               value={filterBagian}
-              onChange={(e) => setFilterBagian(e.target.value as 'A' | 'B' | '')}
+              onChange={(e) => setFilterBagian(e.target.value as 'A' | 'B' | 'C' | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Semua Bagian</option>
               <option value="A">A - Kualifikasi Wajib</option>
               <option value="B">B - Kualifikasi Pendukung</option>
+              <option value="C">C - Komitmen Program</option>
             </select>
           </div>
 
@@ -194,14 +196,17 @@ export default function DataInstrument() {
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
-                        instrument.bagian.startsWith('A')
+                        instrument.bagian.toUpperCase().startsWith('A')
                           ? 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
+                          : instrument.bagian.toUpperCase().startsWith('B')
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
                       }`}
                     >
                       {instrument.bagian}
                     </span>
                   </td>
+
                   <td className="px-6 py-4 text-sm text-gray-600">{instrument.aspek}</td>
                   <td className="px-6 py-4 text-sm text-gray-900 font-medium max-w-xs truncate" title={instrument.pertanyaan}>
                     {instrument.pertanyaan || '-'}
@@ -278,8 +283,10 @@ function InstrumentFormModal({ instrument, instruments, onClose, onSave }: Instr
   const defaultBagian = [
     'A. VERIFIKASI DATA SOSIAL-EKONOMI & KELAYAKAN ADMINISTRATIF',
     'B. PRESENTASI DIRI, WAWASAN & KEMAMPUAN KOMUNIKASI',
+    'B. MOTIVASI, POTENSI DIRI & KEPEDULIAN SOSIAL',
     'B. NILAI, KARAKTER, RESILIENSI & KEBIASAAN',
     'B. KESIAPAN HIDUP MANDIRI & MANAJEMEN FINANSIAL MAHASISWA',
+    'C. KOMITMEN PROGRAM ETOS ID',
   ]
   const unionBagian = Array.from(new Set([...defaultBagian, ...existingBagian]))
 
@@ -294,17 +301,23 @@ function InstrumentFormModal({ instrument, instruments, onClose, onSave }: Instr
   const [pilihan, setPilihan] = useState(instrument?.pilihan || '')
   const [keterangan, setKeterangan] = useState(instrument?.keterangan || '')
   const [error, setError] = useState('')
-  const aspekOptions = [
-    'Wajib',
-    'Akademik',
-    'Bahasa',
-    'LPDP',
-    'Kepribadian',
-    'Keluarga',
-    'Domisili',
-    'Pengalaman',
-    'Potensi',
-  ]
+  const aspekOptions = Array.from(new Set([
+    'Kesiapan Mengikuti Program & Peraturan',
+    'Pendapatan & Tanggungan Keluarga',
+    'Kewajiban Finansial (Hutang/Pinjaman/Paylater)',
+    'Kondisi Kesehatan Keluarga',
+    'Kepemilikan Aset & Akses Teknologi',
+    'Jalur Masuk Perguruan Tinggi',
+    'Prestasi Akademik & Non-Akademik',
+    'Besaran UKT ',
+    'Bantuan Lain',
+    'Kemampuan Hafalan & Bacaan Al-Qur\'an',
+    'Pemahaman Nilai Pergaulan (Pacaran)',
+    'Pemahaman Nilai terkait Isu LGBT',
+    'Literasi & Kemandirian Finansial',
+    'Kesehatan Mental & Manajemen Stres Akademik',
+    ...Array.from(new Set(instruments.map((i) => i.aspek).filter(Boolean))),
+  ]))
 
   const handleSubmit = () => {
     setError('')
@@ -315,10 +328,12 @@ function InstrumentFormModal({ instrument, instruments, onClose, onSave }: Instr
       return
     }
 
-    if (!finalBagian.toUpperCase().startsWith('A') && !finalBagian.toUpperCase().startsWith('B')) {
-      setError('Bagian harus diawali huruf A atau B (contoh: "A. Kelayakan")')
+    const bagianUpper = finalBagian.toUpperCase()
+    if (!bagianUpper.startsWith('A') && !bagianUpper.startsWith('B') && !bagianUpper.startsWith('C')) {
+      setError('Bagian harus diawali huruf A, B, atau C (contoh: "C. Komitmen Program")')
       return
     }
+
 
     if (!aspek || !indikator) {
       setError('Harap lengkapi Aspek dan Indikator')

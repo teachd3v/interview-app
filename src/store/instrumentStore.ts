@@ -36,13 +36,13 @@ export const useInstrumentStore = create<InstrumentStore>((set, get) => ({
       const { data, error } = await supabase
         .from('instruments')
         .select('*')
-        .order('bagian')
         .order('urutan')
 
       if (error) {
         console.error('Error loading instruments:', error)
         return
       }
+
 
       // Map database fields
       const mappedData = (data || []).map((item: any) => ({

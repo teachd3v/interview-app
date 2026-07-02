@@ -142,13 +142,13 @@ export default function FormWawancara() {
 
   const isPartAComplete = () => partA.every((item) => item.value !== null && item.value !== '')
 
-  // Only a8 being "Ya" (true) triggers fail
-  const isPartAFailed = () => partA.find(item => item.id === 'a8')?.value === true
+  // Disqualification logic is removed.
+  const isPartAFailed = () => false
 
   const isCurrentStepComplete = () => {
     if (!stepConfig) return false
     if (stepConfig.type === 'section') {
-      if (stepConfig.sectionName.startsWith('A')) {
+      if (stepConfig.sectionName.toUpperCase().startsWith('A')) {
         return isPartAComplete()
       } else {
         const currentSectionPartB = partB.filter(item => item.bagian === stepConfig.sectionName)
@@ -160,30 +160,18 @@ export default function FormWawancara() {
 
   const handlePartAChange = (id: string, value: any) => {
     updatePartA(id, value)
-    if (id === 'a8' && value === true) {
-      setToast({
-        message: 'Perhatian: Kandidat otomatis tidak lolos karena sudah menerima beasiswa lain.',
-        type: 'warning',
-      })
-      setTimeout(() => setToast(null), 4000)
-    }
   }
 
   const handleNext = () => {
     if (!stepConfig) return
 
     if (stepConfig.type === 'section') {
-      if (stepConfig.sectionName.startsWith('A')) {
+      if (stepConfig.sectionName.toUpperCase().startsWith('A')) {
         if (!isPartAComplete()) {
           setToast({
             message: 'Harap lengkapi semua verifikasi di bagian Wajib (A) terlebih dahulu',
             type: 'error',
           })
-          return
-        }
-
-        if (isPartAFailed()) {
-          handleSubmit()
           return
         }
       } else {
@@ -208,7 +196,7 @@ export default function FormWawancara() {
   }
 
   const handleSubmit = () => {
-    const failedPartA = isPartAFailed()
+    const failedPartA = false
 
     if (!isPartAComplete()) {
       setToast({
@@ -218,7 +206,7 @@ export default function FormWawancara() {
       return
     }
 
-    if (!failedPartA && !isPartBComplete()) {
+    if (!isPartBComplete()) {
       setToast({
         message: 'Harap lengkapi seluruh pertanyaan evaluasi terlebih dahulu',
         type: 'error',
@@ -226,20 +214,19 @@ export default function FormWawancara() {
       return
     }
 
-    const partAPass = !failedPartA
+    const partAPass = true
 
     const partBScores = partB.map((item) => {
       let score = 0
-      if (!failedPartA) {
-        const optionScore = parseInt(item.pilihan || '')
-        if (!isNaN(optionScore)) {
-          score = item.value === 'yes' ? optionScore : 0
-        } else {
-          score = item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0
-        }
+      const optionScore = parseInt(item.pilihan || '')
+      if (!isNaN(optionScore)) {
+        score = item.value === 'yes' ? optionScore : 0
+      } else {
+        score = item.value === 'yes' ? 2 : item.value === 'maybe' ? 1 : 0
       }
       return { ...item, score }
     })
+
 
     // Calculate maximum score dynamically based on questions
     const partBGroups = new Map<string, typeof partB>()
@@ -539,6 +526,7 @@ export default function FormWawancara() {
                                             onClickHandler = () => handlePartAChange(indicator.id, opt);
                                             activeColor = 'bg-blue-600 text-white';
                                           }
+
 
                                           return (
                                             <button

@@ -122,7 +122,7 @@ export const useFormStore = create<FormState>((set, get) => ({
 
   initializeFromInstruments: (instruments) => {
     const partA: PartAIndicator[] = instruments
-      .filter((i) => i.bagian.startsWith('A'))
+      .filter((i) => i.bagian.toUpperCase().startsWith('A'))
       .map((i) => ({
         id: i.id,
         label: i.indikator,
@@ -134,7 +134,7 @@ export const useFormStore = create<FormState>((set, get) => ({
       }))
 
     const partB: PartBIndicator[] = instruments
-      .filter((i) => i.bagian.startsWith('B'))
+      .filter((i) => !i.bagian.toUpperCase().startsWith('A'))
       .map((i) => ({
         id: i.id,
         label: i.indikator,
@@ -148,3 +148,4 @@ export const useFormStore = create<FormState>((set, get) => ({
     set({ partA, partB })
   },
 }))
+

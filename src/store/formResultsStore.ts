@@ -32,9 +32,11 @@ interface FormResultsStore {
   setResults: (results: FormResult[]) => void
   addResult: (result: Omit<FormResult, 'id'>) => Promise<void>
   updateNotes: (id: string, notes: string) => Promise<void>
+  updateResult: (id: string, updates: Partial<FormResult>) => Promise<void>
   getResultsByCandidate: (candidateId: string) => FormResult[]
   getResultsBySchedule: (scheduleId: string) => FormResult[]
   loadFromSupabase: () => Promise<void>
+
 }
 
 export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
@@ -166,6 +168,36 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
       }))
     } catch (error) {
       console.error('Failed to update notes:', error)
+    }
+  },
+
+  updateResult: async (id, updates) => {
+    try {
+      const dbPayload = {
+        part_a_results: updates.partA,
+        part_a_pass: updates.partAPass,
+        part_b_results: updates.partB,
+        part_b_total: updates.partBTotal,
+        part_b_percentage: updates.partBPercentage,
+        notes: updates.notes,
+      }
+
+      const { error } = await supabase
+        .from('assessment_results')
+        .update(dbPayload)
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error updating result:', error)
+        alert(`Gagal mengupdate hasil: ${error.message}`)
+        return
+      }
+
+      set((state) => ({
+        results: state.results.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+      }))
+    } catch (error) {
+      console.error('Failed to update result:', error)
     }
   },
 
