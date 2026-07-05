@@ -23,6 +23,7 @@ export default function FormWawancara() {
   const [toast, setToast] = useState<{ message: string; type: 'warning' | 'error' } | null>(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [submittedResult, setSubmittedResult] = useState<FormResult | null>(null)
+  const [validationErrors, setValidationErrors] = useState<{ partA: string[]; partB: string[] } | null>(null)
   const [scheduleId, setScheduleId] = useState<string | null>(null)
 
   // Timer state
@@ -35,7 +36,6 @@ export default function FormWawancara() {
     partB,
     updatePartA,
     updatePartB,
-    isPartBComplete,
     reset: resetForm,
     initializeFromInstruments,
   } = useFormStore()
@@ -158,49 +158,15 @@ export default function FormWawancara() {
 
   const stepConfig = steps.find((s) => s.num === currentStep)
 
-  const isPartAComplete = () => partA.every((item) => item.value !== null && item.value !== '')
-
   // Disqualification logic is removed.
   const isPartAFailed = () => false
-
-  const isCurrentStepComplete = () => {
-    if (!stepConfig) return false
-    if (stepConfig.type === 'section') {
-      if (stepConfig.sectionName.toUpperCase().startsWith('A')) {
-        return isPartAComplete()
-      } else {
-        const currentSectionPartB = partB.filter(item => item.bagian === stepConfig.sectionName)
-        return currentSectionPartB.every(item => item.value !== null)
-      }
-    }
-    return true
-  }
 
   const handlePartAChange = (id: string, value: any) => {
     updatePartA(id, value)
   }
 
   const handleNext = () => {
-    if (!stepConfig) return
-
-    if (stepConfig.type === 'section') {
-      if (stepConfig.sectionName.toUpperCase().startsWith('A')) {
-        if (!isPartAComplete()) {
-          setToast({
-            message: 'Harap lengkapi semua verifikasi di bagian Wajib (A) terlebih dahulu',
-            type: 'error',
-          })
-          return
-        }
-      } else {
-        if (!isCurrentStepComplete()) {
-          setToast({
-            message: 'Harap lengkapi semua pertanyaan di step ini terlebih dahulu',
-            type: 'error',
-          })
-          return
-        }
-      }
+    if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -214,24 +180,31 @@ export default function FormWawancara() {
   }
 
   const handleSubmit = () => {
+    // 1. Gather all validation errors (skipped questions)
+    const missingA = partA
+      .filter((item) => item.value === null || item.value === '')
+      .map((item) => item.label)
+
+    const partBGroups = new Map<string, typeof partB>()
+    partB.forEach((item) => {
+      const q = item.pertanyaan || item.label || ''
+      if (!partBGroups.has(q)) partBGroups.set(q, [])
+      partBGroups.get(q)!.push(item)
+    })
+    const missingB: string[] = []
+    partBGroups.forEach((options, question) => {
+      const hasAnswer = options.some((opt) => opt.value === 'yes')
+      if (!hasAnswer) {
+        missingB.push(question)
+      }
+    })
+
+    if (missingA.length > 0 || missingB.length > 0) {
+      setValidationErrors({ partA: missingA, partB: missingB })
+      return
+    }
+
     const failedPartA = false
-
-    if (!isPartAComplete()) {
-      setToast({
-        message: 'Harap lengkapi semua verifikasi di bagian Wajib (A) terlebih dahulu',
-        type: 'error',
-      })
-      return
-    }
-
-    if (!isPartBComplete()) {
-      setToast({
-        message: 'Harap lengkapi seluruh pertanyaan evaluasi terlebih dahulu',
-        type: 'error',
-      })
-      return
-    }
-
     const partAPass = true
 
     const partBScores = partB.map((item) => {
@@ -247,15 +220,15 @@ export default function FormWawancara() {
 
 
     // Calculate maximum score dynamically based on questions
-    const partBGroups = new Map<string, typeof partB>()
+    const maxScoreGroups = new Map<string, typeof partB>()
     partB.forEach((item) => {
       const q = item.pertanyaan || ''
-      if (!partBGroups.has(q)) partBGroups.set(q, [])
-      partBGroups.get(q)!.push(item)
+      if (!maxScoreGroups.has(q)) maxScoreGroups.set(q, [])
+      maxScoreGroups.get(q)!.push(item)
     })
 
     let maxTotalScore = 0
-    partBGroups.forEach((options) => {
+    maxScoreGroups.forEach((options) => {
       let maxQScore = 0
       options.forEach((opt) => {
         const optionScore = parseInt(opt.pilihan || '')
@@ -908,38 +881,72 @@ export default function FormWawancara() {
               {currentStep === 1 ? 'Batal' : 'Kembali'}
             </button>
 
-            <div className="flex gap-3">
-              {currentStep < steps.length && !isPartAFailed() ? (
-                <button
-                  onClick={handleNext}
-                  disabled={!isCurrentStepComplete()}
-                  className={`px-8 py-2 font-semibold rounded-lg transition-colors text-sm text-white ${
-                    !isCurrentStepComplete()
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  Lanjut
-                </button>
-              ) : (
-                <button
-                  onClick={handleSubmit}
-                  disabled={currentStep === 1 && !isPartAComplete()}
-                  className={`px-8 py-2 font-semibold rounded-lg transition-colors text-sm text-white ${
-                    currentStep === 1 && !isPartAComplete()
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  Submit Nilai
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+             <div className="flex gap-3">
+               {currentStep < steps.length && !isPartAFailed() ? (
+                 <button
+                   onClick={handleNext}
+                   className="px-8 py-2 font-semibold rounded-lg transition-colors text-sm text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/10"
+                 >
+                   Lanjut
+                 </button>
+               ) : (
+                 <button
+                   onClick={handleSubmit}
+                   className="px-8 py-2 font-semibold rounded-lg transition-colors text-sm text-white bg-green-600 hover:bg-green-700 shadow-md shadow-green-500/10"
+                 >
+                   Submit Nilai
+                 </button>
+               )}
+             </div>
+           </div>
+         </div>
+       </div>
 
-      {/* Success Modal */}
+       {/* Validation Errors Modal */}
+       {validationErrors && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+             <div className="text-red-500 text-3xl mb-2">⚠️</div>
+             <h2 className="text-xl font-bold text-gray-900 mb-2">Beberapa Pertanyaan Terlewat</h2>
+             <p className="text-sm text-gray-600 mb-4">Mohon lengkapi seluruh pertanyaan berikut sebelum menyimpan:</p>
+
+             <div className="max-h-60 overflow-y-auto space-y-4 mb-6 pr-2">
+               {validationErrors.partA.length > 0 && (
+                 <div>
+                   <h3 className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Kualifikasi Wajib (Bagian A)</h3>
+                   <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                     {validationErrors.partA.map((err, idx) => (
+                       <li key={idx}>{err}</li>
+                     ))}
+                   </ul>
+                 </div>
+               )}
+               
+               {validationErrors.partB.length > 0 && (
+                 <div>
+                   <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">Evaluasi Kompetensi (Bagian B)</h3>
+                   <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                     {validationErrors.partB.map((err, idx) => (
+                       <li key={idx}>{err}</li>
+                     ))}
+                   </ul>
+                 </div>
+               )}
+             </div>
+
+             <div className="flex justify-end">
+               <button
+                 onClick={() => setValidationErrors(null)}
+                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm"
+               >
+                 Mengerti & Lengkapi Data
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Success Modal */}
       {showSuccessModal && submittedResult && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">

@@ -196,7 +196,13 @@ export default function DataKandidat() {
                           Edit
                         </button>
                         <button
-                          onClick={() => deleteCandidate(candidate.id)}
+                          onClick={async () => {
+                            if (window.confirm(`Apakah Anda yakin ingin menghapus kandidat ${candidate.full_name}? Semua data wawancara dan jadwal terkait juga akan dihapus.`)) {
+                              await deleteCandidate(candidate.id)
+                              setToast({ message: 'Kandidat berhasil dihapus', type: 'success' })
+                              setTimeout(() => setToast(null), 3000)
+                            }
+                          }}
                           className="text-red-600 hover:text-red-700 font-medium text-sm"
                         >
                           Hapus
@@ -216,7 +222,11 @@ export default function DataKandidat() {
         <EditCandidateModal
           candidate={candidates.find((c) => c.id === editingId)!}
           onClose={() => setEditingId(null)}
-          onUpdate={updateCandidate}
+          onUpdate={async (id, updates) => {
+            await updateCandidate(id, updates)
+            setToast({ message: 'Data kandidat berhasil diperbarui', type: 'success' })
+            setTimeout(() => setToast(null), 3000)
+          }}
         />
       )}
 
@@ -224,7 +234,11 @@ export default function DataKandidat() {
       {showAddForm && (
         <AddCandidateModal
           onClose={() => setShowAddForm(false)}
-          onAdd={addCandidate}
+          onAdd={async (cData) => {
+            await addCandidate(cData)
+            setToast({ message: 'Kandidat baru berhasil ditambahkan', type: 'success' })
+            setTimeout(() => setToast(null), 3000)
+          }}
         />
       )}
     </div>

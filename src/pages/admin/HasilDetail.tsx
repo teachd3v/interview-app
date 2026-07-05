@@ -13,6 +13,7 @@ export default function HasilDetail() {
   const interviewers = useInterviewerStore((state) => state.interviewers)
   const updateNotes = useFormResultsStore((state) => state.updateNotes)
   const loadResults = useFormResultsStore((state) => state.loadFromSupabase)
+  const deleteResult = useFormResultsStore((state) => state.deleteResult)
 
   const updateResult = useFormResultsStore((state) => state.updateResult)
 
@@ -43,7 +44,20 @@ export default function HasilDetail() {
       setEditedUkt(uktValue)
       setEditedAspectNotes(aspectNotes)
     }
-  }, [result, isEditingAll])
+  }, [result])
+
+  const handleCancel = () => {
+    if (result) {
+      setEditedNotes(result.notes || '')
+      setEditedPartA(JSON.parse(JSON.stringify(result.partA || [])))
+      setEditedPartB(JSON.parse(JSON.stringify(result.partB || [])))
+      
+      const { uktValue, aspectNotes } = parseNotes(result.notes || '')
+      setEditedUkt(uktValue)
+      setEditedAspectNotes(aspectNotes)
+    }
+    setIsEditingAll(false)
+  }
 
   if (!result) {
     return (
@@ -256,7 +270,7 @@ export default function HasilDetail() {
             {isEditingAll ? (
               <>
                 <button
-                  onClick={() => setIsEditingAll(false)}
+                  onClick={handleCancel}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
                 >
                   Batal
@@ -275,6 +289,17 @@ export default function HasilDetail() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
                 >
                   ✏️ Edit Semua Data
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Apakah Anda yakin ingin mereset/menghapus hasil wawancara kandidat ini? Tindakan ini akan menghapus permanen data wawancara sehingga hasil skor menjadi 0.")) {
+                      await deleteResult(result.id)
+                      navigate(-1)
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  🗑️ Reset Data (Hapus)
                 </button>
                 <button
                   onClick={() => navigate(-1)}

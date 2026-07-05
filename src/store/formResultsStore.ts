@@ -33,6 +33,7 @@ interface FormResultsStore {
   addResult: (result: Omit<FormResult, 'id'>) => Promise<void>
   updateNotes: (id: string, notes: string) => Promise<void>
   updateResult: (id: string, updates: Partial<FormResult>) => Promise<void>
+  deleteResult: (id: string) => Promise<void>
   getResultsByCandidate: (candidateId: string) => FormResult[]
   getResultsBySchedule: (scheduleId: string) => FormResult[]
   loadFromSupabase: () => Promise<void>
@@ -198,6 +199,28 @@ export const useFormResultsStore = create<FormResultsStore>((set, get) => ({
       }))
     } catch (error) {
       console.error('Failed to update result:', error)
+    }
+  },
+
+  deleteResult: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('assessment_results')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error deleting result:', error)
+        alert(`Gagal menghapus data hasil: ${error.message}`)
+        return
+      }
+
+      set((state) => ({
+        results: state.results.filter((r) => r.id !== id),
+      }))
+    } catch (error) {
+      console.error('Failed to delete result:', error)
+      alert(`Error: ${(error as any).message}`)
     }
   },
 

@@ -89,8 +89,11 @@ export default function HasilAkhir() {
       ['bantuan/beasiswa lain', 'beasiswa lain', 'kip-k', 'sudah menerima bantuan'],
       ['bantuan lain']
     )
-    if (!item) return '—'
-    return item.value === true ? 'Ya' : item.value === false ? 'Tidak' : '—'
+    if (!item || item.value === null || item.value === undefined) return '—'
+    if (typeof item.value === 'boolean') {
+      return item.value ? 'Ya' : 'Tidak'
+    }
+    return String(item.value)
   }
 
   // UKT → aspek "Besaran UKT", pertanyaan "besaran ukt"
@@ -625,8 +628,8 @@ export default function HasilAkhir() {
                           {/* KIP-K / Lainnya (A8) */}
                           <td className="px-4 py-3 text-center whitespace-nowrap">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              a8 === 'Ya' ? 'bg-red-100 text-red-700' :
-                              a8 === 'Tidak' ? 'bg-green-100 text-green-700' :
+                              a8.toLowerCase().includes('tidak') ? 'bg-green-100 text-green-700' :
+                              a8.toLowerCase().includes('ya') ? 'bg-red-100 text-red-700' :
                               'bg-gray-100 text-gray-500'
                             }`}>
                               {a8}

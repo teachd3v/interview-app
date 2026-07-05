@@ -188,6 +188,16 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
   deleteCandidate: async (id) => {
     try {
+      // 1. Delete associated schedule candidates
+      await supabase.from('schedule_candidates').delete().eq('candidate_id', id)
+      
+      // 2. Delete associated assessment results
+      await supabase.from('assessment_results').delete().eq('candidate_id', id)
+      
+      // 3. Delete associated home visit results
+      await supabase.from('home_visit_results').delete().eq('candidate_id', id)
+
+      // 4. Delete the candidate
       const { error } = await supabase
         .from('candidates')
         .delete()
@@ -195,6 +205,7 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
       if (error) {
         console.error('Error deleting candidate:', error)
+        alert(`Gagal menghapus kandidat: ${error.message}`)
         return
       }
 
@@ -204,6 +215,7 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
       }))
     } catch (error) {
       console.error('Failed to delete candidate:', error)
+      alert(`Error: ${(error as Error).message}`)
     }
   },
 
@@ -216,6 +228,7 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
 
       if (error) {
         console.error('Error updating candidate:', error)
+        alert(`Gagal mengupdate kandidat: ${error.message}`)
         return
       }
 
@@ -227,6 +240,7 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
       }))
     } catch (error) {
       console.error('Failed to update candidate:', error)
+      alert(`Error: ${(error as Error).message}`)
     }
   },
 }))
