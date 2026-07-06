@@ -493,7 +493,6 @@ export default function HasilAkhir() {
                   const regionTotal = candidates.filter(c => c.region === region).length
                   const regionSelesai = regionSummaries.filter(s => s.isSelesai).length
                   const regionPassed = regionSummaries.filter(s => s.passAll).length
-                  const regionFailed = regionSummaries.filter(s => s.failAny).length
                   const regionIncomplete = regionTotal - regionSelesai
                   const regionAvg = regionPassed > 0
                     ? (regionSummaries.filter(s => s.passAll).reduce((sum, s) => sum + s.avgScore, 0) / regionPassed).toFixed(1)
@@ -506,14 +505,6 @@ export default function HasilAkhir() {
                         <div className="flex justify-between">
                           <span className="text-gray-500">Selesai:</span>
                           <span className="font-bold text-blue-700">{regionSelesai}/{regionTotal}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Lulus Verifikasi:</span>
-                          <span className="font-bold text-green-600">{regionPassed}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Gugur:</span>
-                          <span className="font-bold text-red-600">{regionFailed}</span>
                         </div>
                         <div className="flex justify-between border-t border-dashed pt-1.5 mt-1.5">
                           <span className="text-gray-500">Belum Selesai:</span>
