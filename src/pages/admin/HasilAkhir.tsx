@@ -25,7 +25,7 @@ export default function HasilAkhir() {
   const [filterRegion, setFilterRegion] = useState<string>('all')
   const [filterInterviewer, setFilterInterviewer] = useState<string>('all')
   const [filterCandidate, setFilterCandidate] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'lulus' | 'tidak-lulus'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'kipk' | 'non-kipk'>('all')
   const [isRegionSummaryOpen, setIsRegionSummaryOpen] = useState(false)
 
   // Annotation state: per result ID
@@ -186,9 +186,10 @@ export default function HasilAkhir() {
     const matchRegion = filterRegion === 'all' || candidate?.region === filterRegion
     const matchInterviewer = filterInterviewer === 'all' || r.interviewerId === filterInterviewer
     const matchCandidate = filterCandidate === 'all' || r.candidateId === filterCandidate
+    const isKipk = getA8Display(r) === 'Ya'
     const matchStatus =
       filterStatus === 'all' ||
-      (filterStatus === 'lulus' ? r.partAPass : !r.partAPass)
+      (filterStatus === 'kipk' ? isKipk : !isKipk)
 
     return matchRegion && matchInterviewer && matchCandidate && matchStatus
   })
@@ -456,15 +457,15 @@ export default function HasilAkhir() {
                   </div>
 
                   <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-                    <label className="text-sm font-semibold text-gray-700">Status:</label>
+                    <label className="text-sm font-semibold text-gray-700">KIP-K/Lainnya:</label>
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value as any)}
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     >
-                      <option value="all">Semua Status</option>
-                      <option value="lulus">Lulus Verifikasi</option>
-                      <option value="tidak-lulus">Gugur</option>
+                      <option value="all">Semua</option>
+                      <option value="kipk">KIP-K / Lainnya</option>
+                      <option value="non-kipk">Bukan KIP-K</option>
                     </select>
                   </div>
                 </>
