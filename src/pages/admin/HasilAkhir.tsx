@@ -25,7 +25,7 @@ export default function HasilAkhir() {
   const [filterRegion, setFilterRegion] = useState<string>('all')
   const [filterInterviewer, setFilterInterviewer] = useState<string>('all')
   const [filterCandidate, setFilterCandidate] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'kipk' | 'non-kipk'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'diterima' | 'mendaftar' | 'tidak'>('all')
   const [isRegionSummaryOpen, setIsRegionSummaryOpen] = useState(false)
 
   // Annotation state: per result ID
@@ -186,10 +186,12 @@ export default function HasilAkhir() {
     const matchRegion = filterRegion === 'all' || candidate?.region === filterRegion
     const matchInterviewer = filterInterviewer === 'all' || r.interviewerId === filterInterviewer
     const matchCandidate = filterCandidate === 'all' || r.candidateId === filterCandidate
-    const isKipk = getA8Display(r) === 'Ya'
+    const a8Val = getA8Display(r)
     const matchStatus =
       filterStatus === 'all' ||
-      (filterStatus === 'kipk' ? isKipk : !isKipk)
+      (filterStatus === 'diterima' && a8Val === 'Ya, Diterima Beasiswa') ||
+      (filterStatus === 'mendaftar' && a8Val === 'Ya, Sedang Mendaftar Beasiswa') ||
+      (filterStatus === 'tidak' && a8Val === 'Tidak Mendaftar dan Menerima Beasiswa')
 
     return matchRegion && matchInterviewer && matchCandidate && matchStatus
   })
@@ -464,8 +466,9 @@ export default function HasilAkhir() {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     >
                       <option value="all">Semua</option>
-                      <option value="kipk">KIP-K / Lainnya</option>
-                      <option value="non-kipk">Bukan KIP-K</option>
+                      <option value="diterima">Ya, Diterima Beasiswa</option>
+                      <option value="mendaftar">Ya, Sedang Mendaftar Beasiswa</option>
+                      <option value="tidak">Tidak Mendaftar dan Menerima Beasiswa</option>
                     </select>
                   </div>
                 </>
