@@ -190,6 +190,30 @@ export default function InterviewerDashboard() {
     }
   }
 
+  const getBeasiswaText = (result: any) => {
+    if (!result || !result.partA) return '—'
+    const item = result.partA.find((i: any) => {
+      const label = (i.label || i.pertanyaan || '').toLowerCase()
+      const aspect = (i.aspect || i.aspek || '').toLowerCase()
+      return (
+        label.includes('bantuan/beasiswa') ||
+        label.includes('beasiswa lain') ||
+        label.includes('kip-k') ||
+        label.includes('sudah menerima bantuan') ||
+        aspect.includes('bantuan lain')
+      )
+    })
+    if (!item || item.value === null || item.value === undefined) return '—'
+    return String(item.value)
+  }
+
+  const getBeasiswaBadgeColor = (text: string) => {
+    if (text.includes('Diterima Beasiswa')) return 'bg-green-50 text-green-700 border border-green-200'
+    if (text.includes('Sedang Mendaftar')) return 'bg-yellow-50 text-yellow-750 border border-yellow-200'
+    if (text.includes('Tidak Mendaftar')) return 'bg-gray-50 text-gray-700 border border-gray-200'
+    return 'bg-gray-100 text-gray-700 border border-gray-200'
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Topbar */}
@@ -297,20 +321,22 @@ export default function InterviewerDashboard() {
                                 <span className="text-sm font-medium text-gray-900">
                                   {getCandidateName(candId)} ({candId})
                                 </span>
-                                {hasBeenInterviewed(candId) && getInterviewResult(candId) && (
-                                  <div className="mt-1 flex gap-2">
-                                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                                      getInterviewResult(candId)?.partAPass
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-red-100 text-red-700'
-                                    }`}>
-                                      {getInterviewResult(candId)?.partAPass ? '✓ Lulus' : '✗ Tidak Lulus'}
-                                    </span>
-                                    <span className="text-xs px-2 py-1 rounded-full font-semibold bg-blue-100 text-blue-700">
-                                      {getInterviewResult(candId)?.partBTotal}/40
-                                    </span>
-                                  </div>
-                                )}
+                                {hasBeenInterviewed(candId) && getInterviewResult(candId) && (() => {
+                                  const resultObj = getInterviewResult(candId)
+                                  const bText = getBeasiswaText(resultObj)
+                                  const scoreVal = resultObj?.partBPercentage
+                                  const scoreText = typeof scoreVal === 'number' ? `${scoreVal.toFixed(1)}%` : '—%'
+                                  return (
+                                    <div className="mt-1 flex flex-wrap gap-2">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${getBeasiswaBadgeColor(bText)}`}>
+                                        {bText}
+                                      </span>
+                                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                        {scoreText}
+                                      </span>
+                                    </div>
+                                  )
+                                })()}
                               </div>
                               {hasBeenInterviewed(candId) ? (
                                 <Link
