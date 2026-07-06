@@ -257,6 +257,22 @@ export default function HasilDetail() {
     return new Intl.NumberFormat('id-ID').format(parseInt(clean))
   }
 
+  const getKipKDisplay = () => {
+    const item = currentPartA.find((i: any) =>
+      i.id === 'a8' ||
+      ['bantuan/beasiswa lain', 'beasiswa lain', 'kip-k', 'sudah menerima bantuan'].some(kw => i.pertanyaan?.toLowerCase().includes(kw)) ||
+      ['bantuan lain'].some(kw =>
+        i.aspect?.toLowerCase().includes(kw) ||
+        i.label?.toLowerCase().includes(kw)
+      )
+    )
+    if (!item || item.value === null || item.value === undefined) return '—'
+    if (typeof item.value === 'boolean') {
+      return item.value ? 'Ya' : 'Tidak'
+    }
+    return String(item.value)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
@@ -362,10 +378,10 @@ export default function HasilDetail() {
         <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Ringkasan Hasil</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className={`rounded-xl p-4 bg-green-800/60`}>
-              <p className="text-[10px] text-gray-300 uppercase font-semibold tracking-wider">Status Kelayakan Wajib</p>
-              <p className={`text-xl font-black mt-1 text-green-300`}>
-                LULUS VERIFIKASI
+            <div className="bg-gray-800 rounded-xl p-4">
+              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider">KIP-K / LAINNYA</p>
+              <p className="text-xl font-bold text-blue-400 mt-1">
+                {getKipKDisplay()}
               </p>
             </div>
             <div className="bg-gray-800 rounded-xl p-4">
