@@ -417,22 +417,26 @@ export default function FormWawancara() {
           <div className="flex justify-between items-center gap-1 overflow-x-auto pb-2">
             {steps.map((step, index) => (
               <div key={step.num} className="flex items-center flex-1 min-w-[100px]">
-                <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(step.num)}
+                  className="flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md p-1"
+                >
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all transform group-hover:scale-105 ${
                       currentStep === step.num
                         ? 'bg-blue-600 text-white ring-4 ring-blue-200'
                         : currentStep > step.num
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'bg-green-600 text-white group-hover:bg-green-700'
+                          : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'
                     }`}
                   >
                     {currentStep > step.num ? '✓' : step.icon}
                   </div>
-                  <p className="text-[10px] font-semibold text-gray-600 mt-2 text-center whitespace-nowrap">
+                  <p className="text-[10px] font-semibold text-gray-600 mt-2 text-center whitespace-nowrap group-hover:text-blue-600 transition-colors">
                     {step.title}
                   </p>
-                </div>
+                </button>
                 {index < steps.length - 1 && (
                   <div
                     className={`flex-1 h-0.5 mx-2 transition-all ${

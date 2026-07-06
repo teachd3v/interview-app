@@ -204,6 +204,46 @@ export default function FormHomeVisit() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleStepClick = (stepNum: number) => {
+    if (stepNum < currentStep) {
+      setCurrentStep(stepNum as any)
+      setToast(null)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    if (stepNum > 1 && currentStep === 1 && !isStep1Complete()) {
+      setToast({ message: 'Harap lengkapi semua pertanyaan Bagian A', type: 'error' })
+      return
+    }
+    if (stepNum > 2 && (currentStep === 1 || currentStep === 2)) {
+      if (!isStep1Complete()) {
+        setToast({ message: 'Harap lengkapi semua pertanyaan Bagian A', type: 'error' })
+        return
+      }
+      if (!isStep2Complete()) {
+        setToast({ message: 'Harap lengkapi semua pertanyaan Bagian B', type: 'error' })
+        return
+      }
+    }
+    if (stepNum > 3 && (currentStep === 1 || currentStep === 2 || currentStep === 3)) {
+      if (!isStep1Complete()) {
+        setToast({ message: 'Harap lengkapi semua pertanyaan Bagian A', type: 'error' })
+        return
+      }
+      if (!isStep2Complete()) {
+        setToast({ message: 'Harap lengkapi semua pertanyaan Bagian B', type: 'error' })
+        return
+      }
+      if (!isStep3Complete()) {
+        setToast({ message: 'Harap lengkapi semua pertanyaan Bagian C', type: 'error' })
+        return
+      }
+    }
+    setCurrentStep(stepNum as any)
+    setToast(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const calculateResults = () => {
     const partAPass = questionsA.every(q => partAAnswers[q.id] === true)
     
@@ -481,22 +521,26 @@ export default function FormHomeVisit() {
           <div className="flex justify-between items-center">
             {steps.map((step, index) => (
               <div key={step.num} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => handleStepClick(step.num)}
+                  className="flex flex-col items-center cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md p-1"
+                >
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all shadow-sm ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all shadow-sm transform group-hover:scale-105 ${
                       currentStep === step.num
                         ? 'bg-blue-600 text-white ring-4 ring-blue-100'
                         : currentStep > step.num
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'bg-green-600 text-white group-hover:bg-green-700'
+                          : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'
                     }`}
                   >
                     {currentStep > step.num ? '✓' : step.icon}
                   </div>
-                  <p className="text-[10px] font-bold text-gray-500 mt-2 uppercase tracking-tight hidden md:block">
+                  <p className="text-[10px] font-bold text-gray-500 mt-2 uppercase tracking-tight hidden md:block group-hover:text-blue-600 transition-colors">
                     {step.title}
                   </p>
-                </div>
+                </button>
                 {index < steps.length - 1 && (
                   <div className={`flex-1 h-1 mx-2 rounded-full ${currentStep > step.num ? 'bg-green-600' : 'bg-gray-200'}`} />
                 )}
