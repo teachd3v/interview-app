@@ -522,6 +522,31 @@ export default function HasilDetail() {
                     )
                   })}
                 </div>
+
+                {/* Catatan aspek untuk Bagian A */}
+                {(() => {
+                  const aspect = indicators[0]?.aspect || 'Umum'
+                  const aspectNote = isEditingAll ? (editedAspectNotes[aspect] || '') : (aspectNotes[aspect] || '')
+                  if (!isEditingAll && !aspectNote) return null
+                  return (
+                    <div className="mt-3">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider mb-1">📝 Catatan Aspek ini</p>
+                        {isEditingAll ? (
+                          <textarea
+                            value={aspectNote}
+                            onChange={(e) => setEditedAspectNotes(prev => ({ ...prev, [aspect]: e.target.value }))}
+                            className="w-full p-2 border border-yellow-300 rounded text-xs bg-white focus:ring-1 focus:ring-yellow-500 outline-none resize-none font-sans"
+                            rows={2}
+                            placeholder="Tambahkan catatan khusus aspek ini..."
+                          />
+                        ) : (
+                          <p className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{aspectNote}</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             ))}
           </div>
