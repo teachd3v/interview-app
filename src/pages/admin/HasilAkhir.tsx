@@ -42,6 +42,21 @@ export default function HasilAkhir() {
     loadInterviewers()
   }, [])
 
+  // Sync annotations from database results
+  useEffect(() => {
+    const loadedAnnotations: Record<string, ResultAnnotation> = {}
+    results.forEach((r) => {
+      const notesStr = r.notes || ''
+      const recMatch = notesStr.match(/\[Rekomendasi Akhir:\s*([^\]]*)\]/)
+      const catMatch = notesStr.match(/\[Catatan Akhir:\s*([^\]]*)\]/)
+      loadedAnnotations[r.id] = {
+        catatan: catMatch ? catMatch[1].trim() : '',
+        rekomendasi: recMatch ? recMatch[1].trim() as RecommendationKey : '',
+      }
+    })
+    setAnnotations(loadedAnnotations)
+  }, [results])
+
   // Close chat on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -248,8 +263,29 @@ export default function HasilAkhir() {
     setOpenChatId(resultId)
   }
 
-  const saveAnnotation = (resultId: string) => {
-    setAnnotations(prev => ({ ...prev, [resultId]: { catatan: tempCatatan, rekomendasi: tempRekomendasi } }))
+  const saveAnnotation = async (resultId: string) => {
+    const result = results.find((r) => r.id === resultId)
+    if (!result) return
+
+    let newNotes = result.notes || ''
+    // Hapus anotasi admin lama jika ada
+    newNotes = newNotes
+      .replace(/\[Rekomendasi Akhir:[^\]]*\]\n?/g, '')
+      .replace(/\[Catatan Akhir:[^\]]*\]\n?/g, '')
+      .trim()
+
+    // Prepend anotasi admin baru
+    let prefix = ''
+    if (tempRekomendasi) {
+      prefix += `[Rekomendasi Akhir: ${tempRekomendasi}]\n`
+    }
+    if (tempCatatan) {
+      prefix += `[Catatan Akhir: ${tempCatatan}]\n`
+    }
+    newNotes = (prefix + newNotes).trim()
+
+    // Simpan ke Supabase database
+    await useFormResultsStore.getState().updateNotes(resultId, newNotes)
     setOpenChatId(null)
   }
 
