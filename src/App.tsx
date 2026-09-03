@@ -10,6 +10,7 @@ import HasilHomeVisit from './pages/admin/HasilHomeVisit'
 import HasilHomeVisitDetail from './pages/admin/HasilHomeVisitDetail'
 import ValidasiHomeVisit from './pages/admin/ValidasiHomeVisit'
 import HasilDetail from './pages/admin/HasilDetail'
+import DataWilayah from './pages/admin/DataWilayah'
 import InterviewerDashboard from './pages/interviewer/InterviewerDashboard'
 import InterviewerSelectPage from './pages/interviewer/InterviewerSelectPage'
 import FormWawancara from './pages/interviewer/FormWawancara'
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/admin/kandidat" element={<DataKandidat />} />
             <Route path="/admin/interviewer" element={<DataInterviewer />} />
             <Route path="/admin/instrumen" element={<DataInstrument />} />
+            <Route path="/admin/wilayah" element={<DataWilayah />} />
             <Route path="/admin/jadwal" element={<JadwalWawancara />} />
             <Route path="/admin/hasil" element={<HasilAkhir />} />
             <Route path="/admin/hasil-home-visit" element={<HasilHomeVisit />} />

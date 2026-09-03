@@ -68,6 +68,16 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-600">Kelola pertanyaan wawancara</p>
           </Link>
 
+          {/* Data Wilayah Card */}
+          <Link
+            to="/admin/wilayah"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">🗺️</div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Data Wilayah</h2>
+            <p className="text-sm text-gray-600">Kelola master data wilayah</p>
+          </Link>
+
           {/* Jadwal Wawancara Card */}
           <Link
             to="/admin/jadwal"
