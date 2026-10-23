@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.env.backup
+.env.backup*
+supabase_backup_*
+backup-storage/
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +29,15 @@ dist-ssr
 
 # Blasting tool (local only)
 blasting/
+
+.vercel
+
+# Subproject homevisit-app (ignored in parent repo)
+homevisit-app/
+
+# Standalone files & scripts
+homevisit-standalone.html
+*.pdf
+search_all_files.js
+scripts/
+

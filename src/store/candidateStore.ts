@@ -8,7 +8,6 @@ export interface Candidate {
   region: string
   gender: string
   major: string
-  home_visit_status?: 'pending' | 'lolos' | 'gagal'
 }
 
 interface CandidateStore {
@@ -19,8 +18,6 @@ interface CandidateStore {
   deleteCandidate: (id: string) => Promise<void>
   updateCandidate: (id: string, candidate: Partial<Candidate>) => Promise<void>
   loadFromSupabase: () => Promise<void>
-  updateHomeVisitStatus: (id: string, status: 'lolos' | 'gagal' | 'pending') => Promise<void>
-  bulkUpdateHomeVisitStatus: (ids: string[], status: 'lolos' | 'gagal' | 'pending') => Promise<void>
 }
 
 export const useCandidateStore = create<CandidateStore>((set) => ({
@@ -49,58 +46,11 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
         region: item.region,
         gender: item.gender,
         major: item.major,
-        home_visit_status: item.home_visit_status,
       }))
 
       set({ candidates: mappedData })
     } catch (error) {
       console.error('Failed to load candidates:', error)
-    }
-  },
-
-  updateHomeVisitStatus: async (id, status) => {
-    try {
-      const { error } = await supabase
-        .from('candidates')
-        .update({ home_visit_status: status })
-        .eq('id', id)
-
-      if (error) {
-        console.error('Error updating home visit status:', error)
-        alert(`Gagal memperbarui status: ${error.message}`)
-        return
-      }
-
-      set((state) => ({
-        candidates: state.candidates.map((c) =>
-          c.id === id ? { ...c, home_visit_status: status } : c
-        ),
-      }))
-    } catch (error) {
-      console.error('Failed to update home visit status:', error)
-    }
-  },
-
-  bulkUpdateHomeVisitStatus: async (ids, status) => {
-    try {
-      const { error } = await supabase
-        .from('candidates')
-        .update({ home_visit_status: status })
-        .in('id', ids)
-
-      if (error) {
-        console.error('Error bulk updating home visit status:', error)
-        alert(`Gagal memperbarui status: ${error.message}`)
-        return
-      }
-
-      set((state) => ({
-        candidates: state.candidates.map((c) =>
-          ids.includes(c.id) ? { ...c, home_visit_status: status } : c
-        ),
-      }))
-    } catch (error) {
-      console.error('Failed to bulk update home visit status:', error)
     }
   },
 
@@ -193,11 +143,8 @@ export const useCandidateStore = create<CandidateStore>((set) => ({
       
       // 2. Delete associated assessment results
       await supabase.from('assessment_results').delete().eq('candidate_id', id)
-      
-      // 3. Delete associated home visit results
-      await supabase.from('home_visit_results').delete().eq('candidate_id', id)
 
-      // 4. Delete the candidate
+      // 3. Delete the candidate
       const { error } = await supabase
         .from('candidates')
         .delete()
