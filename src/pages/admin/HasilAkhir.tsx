@@ -295,21 +295,50 @@ export default function HasilAkhir() {
     tidak_lolos: { label: 'Tidak Lolos Wawancara', color: 'text-red-700', bg: 'bg-red-100 border-red-300' },
   }
 
-  // Export hasil ke Excel
+  // Helper untuk parsing notes per aspek dan catatan bebas
+  const parseResultNotes = (notes: string = '') => {
+    const aspectNotes: Record<string, string> = {}
+    let uktValue = ''
+
+    const uktMatch = notes.match(/\[UKT:\s*([^\]]+)\]/)
+    if (uktMatch) uktValue = uktMatch[1].trim()
+
+    const aspectRegex = /\[Aspek:\s*([^\]]+)\]\n([\s\S]*?)(?=\n\[Aspek:|$)/g
+    let match
+    while ((match = aspectRegex.exec(notes)) !== null) {
+      aspectNotes[match[1].trim()] = match[2].trim()
+    }
+
+    // Catatan bebas / catatan umum interviewer (di luar tag [Aspek:], [UKT:], [Rekomendasi Akhir:], [Catatan Akhir:])
+    const freeText = notes
+      .replace(/\[Rekomendasi Akhir:[^\]]*\]\n?/g, '')
+      .replace(/\[Catatan Akhir:[^\]]*\]\n?/g, '')
+      .replace(/\[UKT:[^\]]*\]\n?/g, '')
+      .replace(/\[Aspek:[^\]]*\]\n([\s\S]*?)(?=\n\[Aspek:|$)/g, '')
+      .trim()
+
+    return { uktValue, aspectNotes, freeText }
+  }
+
+  // Export hasil ke Excel (Multi-Sheet: Ringkasan & Detail Catatan Lengkap)
   const handleExportResults = () => {
     if (activeTab === 'all') {
       if (filteredResults.length === 0) return
 
-      const dataToExport = [
-        ['HASIL AKHIR WAWANCARA - SEMUA HASIL'],
+      // --- SHEET 1: REKAP RINGKAS HASIL WAWANCARA ---
+      const dataToExportSheet1 = [
+        ['HASIL AKHIR WAWANCARA - REKAP HASIL'],
         [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
         [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
         [],
-        ['Tanggal', 'Interviewer', 'Nama Kandidat', 'Jenis Kelamin', 'Wilayah', 'Kampus', 'Prodi', 'Skor (%)', 'Daftar KIP-K/Lainnya', 'Tilawah', 'Pacaran', 'UKT', 'Rekomendasi', 'Catatan Akhir'],
+        ['Tanggal', 'Interviewer', 'Nama Kandidat', 'Jenis Kelamin', 'Wilayah', 'Kampus', 'Prodi', 'Skor (%)', 'Daftar KIP-K/Lainnya', 'Tilawah', 'Pacaran', 'UKT', 'Rekomendasi Admin', 'Catatan Akhir Admin', 'Catatan Umum Interviewer'],
         ...filteredResults.map((result) => {
           const tilawah = getTilawahDisplay(result)
           const pacaran = getPacaranDisplay(result)
           const ann = annotations[result.id] || { catatan: '', rekomendasi: '' }
+          const { uktValue, freeText } = parseResultNotes(result.notes || '')
+          const uktDisplay = getA7Display(result) || (uktValue ? `Rp ${uktValue}` : '-')
+
           return [
             formatDateTime(result.submittedAt),
             getInterviewerDisplay(result.interviewerId),
@@ -322,17 +351,97 @@ export default function HasilAkhir() {
             getA8Display(result),
             typeof tilawah === 'object' ? `${tilawah.label} (${tilawah.score})` : tilawah,
             typeof pacaran === 'object' ? `${pacaran.label} (${pacaran.score})` : pacaran,
-            getA7Display(result),
+            uktDisplay,
             ann.rekomendasi ? (rekomendasiConfig[ann.rekomendasi]?.label || '') : '',
             ann.catatan,
+            freeText,
           ]
         }),
       ]
 
-      const ws = XLSX.utils.aoa_to_sheet(dataToExport)
+      // Aspek-aspek utama wawancara
+      const standardAspects = [
+        'Pendapatan & Tanggungan Keluarga',
+        'Kondisi Kesehatan Keluarga',
+        'Kewajiban Finansial (Hutang/Pinjaman/Paylater)',
+        'Kepemilikan Aset & Akses Teknologi',
+        'Literasi & Kemandirian Finansial',
+        'Bantuan Lain',
+        'Jalur Masuk Perguruan Tinggi',
+        'Prestasi Akademik & Non-Akademik',
+        'Pengalaman Perjuangan & Resiliensi',
+        'Motivasi Mendaftar Etos ID',
+        'Pemahaman & Kejelasan Tujuan Hidup',
+        'Perencanaan & Strategi Pencapaian Tujuan',
+        'Kepedulian & Keterlibatan Sosial',
+        'Minat, Bakat & Rencana Pengembangan Diri',
+        'Kesadaran Diri (Kelebihan & Kekurangan)',
+        'Kesehatan Mental & Manajemen Stres Akademik',
+        "Kemampuan Hafalan & Bacaan Al-Qur'an",
+        'Kedisiplinan Ibadah Wajib & Sunnah',
+        'Pemahaman Nilai Pergaulan (Pacaran)',
+        'Pemahaman Nilai terkait Isu LGBT',
+        'Kesiapan Mengikuti Program & Peraturan',
+        'Literasi Digital & Kebiasaan Bermedia Sosial'
+      ]
+
+      // --- SHEET 2: DETAIL CATATAN SEMUA ASPEK & INTERVIEWER ---
+      const dataToExportSheet2 = [
+        ['DETAIL CATATAN & HASIL WAWANCARA LENGKAP'],
+        [`Filter Wilayah: ${filterRegion === 'all' ? 'Semua Wilayah' : filterRegion}`],
+        [`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`],
+        [],
+        [
+          'Tanggal',
+          'Interviewer',
+          'Nama Kandidat',
+          'Wilayah',
+          'Kampus',
+          'Skor (%)',
+          'Catatan Umum Interviewer',
+          'Catatan Akhir Admin',
+          'Rekomendasi Admin',
+          ...standardAspects.map(a => `Catatan: ${a}`)
+        ],
+        ...filteredResults.map((result) => {
+          const ann = annotations[result.id] || { catatan: '', rekomendasi: '' }
+          const { aspectNotes, freeText } = parseResultNotes(result.notes || '')
+
+          return [
+            formatDateTime(result.submittedAt),
+            getInterviewerDisplay(result.interviewerId),
+            getCandidateName(result.candidateId),
+            getCandidateRegion(result.candidateId),
+            getCandidateSchool(result.candidateId),
+            result.partAPass ? result.partBPercentage.toFixed(1) : 'GUGUR',
+            freeText || '-',
+            ann.catatan || '-',
+            ann.rekomendasi ? (rekomendasiConfig[ann.rekomendasi]?.label || '') : '-',
+            ...standardAspects.map(a => aspectNotes[a] || '-')
+          ]
+        })
+      ]
+
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Hasil Wawancara')
-      ws['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 14 }, { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 18 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 40 }]
+
+      // Buat Sheet 1
+      const ws1 = XLSX.utils.aoa_to_sheet(dataToExportSheet1)
+      ws1['!cols'] = [
+        { wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 14 }, { wch: 18 },
+        { wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
+        { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 35 }, { wch: 40 }
+      ]
+      XLSX.utils.book_append_sheet(wb, ws1, 'Rekap Hasil Wawancara')
+
+      // Buat Sheet 2
+      const ws2 = XLSX.utils.aoa_to_sheet(dataToExportSheet2)
+      ws2['!cols'] = [
+        { wch: 20 }, { wch: 28 }, { wch: 25 }, { wch: 16 }, { wch: 26 },
+        { wch: 12 }, { wch: 40 }, { wch: 35 }, { wch: 25 },
+        ...standardAspects.map(() => ({ wch: 45 }))
+      ]
+      XLSX.utils.book_append_sheet(wb, ws2, 'Detail Catatan Wawancara')
+
       XLSX.writeFile(wb, `Hasil_Wawancara_Lengkap_${new Date().toISOString().split('T')[0]}.xlsx`)
     } else {
       if (leaderboard.length === 0) return

@@ -29,6 +29,7 @@ backup-storage/
 
 # Blasting tool (local only)
 blasting/
+backup-data-supabase/
 
 .vercel
 
